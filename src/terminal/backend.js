@@ -1,29 +1,26 @@
 // ============================================================================
 // NETRUNNER · src/terminal/backend.js — the two interchangeable jack-in shells
-// behind one interface. ARCHITECTURE.md §9.
+// behind one LINE-ORIENTED interface (the DOM terminal submits whole lines).
 //
 //   const be = await makeBackend('sim'|'real', mission)
-//   be.write(data)       raw xterm key data in
-//   be.onData(cb)        terminal output out (CRLF/ANSI strings)
-//   be.resize(cols,rows) terminal geometry hint
-//   be.check()           → bool | Promise<bool>: mission objective met?
-//   be.dispose()         tear everything down
-//   be.banner            ANSI banner string for jackin to print on connect
-//   -- extras (optional, jackin feature-detects) --
-//   be.noise()           heat units accrued since last call (trace bursts)
-//   be.exited()          player voluntarily closed the session (clean jack-out)
-//   be.mode              'sim' | 'real'
+//   be.mode                 'sim' | 'real'
+//   be.banner               ANSI banner string to print on connect
+//   be.onOutput(cb)         cb(str): shell output (ANSI/newlines) -> terminal
+//   be.promptStr()          current prompt string (ANSI) — reflects cwd / sql mode
+//   be.runLine(line)        execute a submitted command line  -> Promise
+//   be.complete(line)       -> { line, suggestions } for tab completion
+//   be.check()              -> bool | Promise<bool>: objective met?
+//   be.noise()              heat units accrued since last call (trace bursts)
+//   be.exited()             player typed exit/logout — clean jack-out
+//   be.dispose()            tear everything down
 //
-// 'sim'  — SimShell over the mission's in-memory fs. Always available, no
-//          cross-origin isolation required. THE fallback; correctness first.
-// 'real' — CheerpX x86 Linux VM (lazy-loaded from the npm package, engine +
-//          base disk image stream from the leaningtech CDN). Boots a Debian
-//          root from a CloudDevice with an IndexedDB overlay (writes persist
-//          locally, the base image is read-only), replays the mission fs into
-//          the VM via a generated setup script, then attaches an interactive
-//          bash to the terminal. Requires COOP/COEP (crossOriginIsolated) —
-//          if anything is missing this function THROWS with a clear message
-//          and jackin.js falls back to 'sim'.
+// 'sim'  — SimShell over the mission's in-memory fs, run in line mode. Always
+//          available, no cross-origin isolation, instant. The default.
+// 'real' — CheerpX x86 Linux VM. Each submitted line runs as `bash -lc` with a
+//          persisted working directory, so it behaves like a real session while
+//          staying line-oriented (and never depending on a fragile key pipe).
+//          Requires COOP/COEP (crossOriginIsolated); throws clearly otherwise so
+//          jackin.js falls back to 'sim'.
 // ============================================================================
 
 import { SimShell } from './sim-shell.js'
@@ -57,10 +54,10 @@ function makeBanner(mission, mode) {
     `  ${D}target    :${R} ${Y}${mission.host}${R}`,
     `  ${D}link      :${R} ${link}`,
     `  ${D}objective :${R} ${mission.objective}`,
-    `  ${D}deck      :${R} ${C}help${R}${D} lists commands · ${R}${C}man <cmd>${R}${D} explains them${R}`,
+    `  ${D}deck      :${R} ${C}help${R}${D} lists commands · ${R}${C}man <cmd>${R}${D} explains them · ${R}${C}exit${R}${D} jacks out${R}`,
     rule,
     '',
-  ].join('\r\n')
+  ].join('\n')
 }
 
 // ---------------------------------------------------------------------------
@@ -73,20 +70,15 @@ function makeSimBackend(mission) {
     hosts: mission.hosts || {},
     cwd: mission.cwd,
   })
-  const cbs = []
   let disposed = false
-  shell.onOutput(d => { for (const cb of cbs) cb(d) })
-  // First prompt lands right after jackin prints the banner (it attaches
-  // onData synchronously after makeBackend resolves).
-  queueMicrotask(() => { if (!disposed) shell.prompt() })
-
   return {
     mode: 'sim',
     banner: makeBanner(mission, 'sim'),
-    shell, // exposed for debugging / automated verification (window.NR poking)
-    write(data) { if (!disposed) shell.input(data) },
-    onData(cb) { cbs.push(cb) },
-    resize(cols, rows) { shell.resize(cols, rows) },
+    shell, // exposed for debugging / automated verification
+    onOutput(cb) { return shell.onOutput(cb) },
+    promptStr() { return shell.promptStr() },
+    runLine(line) { return disposed ? Promise.resolve() : shell.execLine(line) },
+    complete(line) { return shell.complete(line) },
     check() {
       if (disposed) return false
       try { return !!mission.check(shell.state) } catch { return false }
@@ -98,40 +90,33 @@ function makeSimBackend(mission) {
 }
 
 // ---------------------------------------------------------------------------
-// mode 'real' — CheerpX
+// mode 'real' — CheerpX, line-oriented
 // ---------------------------------------------------------------------------
 const CX_DISK_URL = 'wss://disks.webvm.io/debian_large_20230522_5044875331.ext2'
 const CX_ENV = [
-  'HOME=/home/user', 'USER=user', 'SHELL=/bin/bash', 'TERM=xterm',
+  'HOME=/home/user', 'USER=user', 'SHELL=/bin/bash', 'TERM=dumb',
   'EDITOR=vim', 'LANG=en_US.UTF-8',
   'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
 ]
 
 async function makeRealBackend(mission) {
-  // --- preconditions: COOP/COEP + SharedArrayBuffer ------------------------
   if (typeof SharedArrayBuffer === 'undefined' || !globalThis.crossOriginIsolated) {
-    throw new Error('full dive needs cross-origin isolation (COOP/COEP headers) — not satisfied here')
+    throw new Error('full dive needs cross-origin isolation (COOP/COEP) — not satisfied here')
   }
 
-  // --- lazy engine load ------------------------------------------------------
   let CX
-  try {
-    CX = await import('@leaningtech/cheerpx')
-  } catch (err) {
-    throw new Error(`CheerpX engine failed to load: ${(err && err.message) || err}`)
-  }
+  try { CX = await import('@leaningtech/cheerpx') }
+  catch (err) { throw new Error(`CheerpX engine failed to load: ${(err && err.message) || err}`) }
 
-  // --- devices: cloud base image + IDB overlay + data/checks side channels ---
   let cloud, overlayIdb, overlay, dataDev, checksDev, vm
-  const dispoables = []
+  const disposables = []
   try {
     cloud = await CX.CloudDevice.create(CX_DISK_URL)
     overlayIdb = await CX.IDBDevice.create('netrunner_vm_overlay')
     overlay = await CX.OverlayDevice.create(cloud, overlayIdb)
-    dataDev = await CX.DataDevice.create()       // JS -> VM (setup script)
-    checksDev = await CX.IDBDevice.create('netrunner_vm_checks') // VM -> JS (check results)
-    dispoables.push(cloud, overlayIdb, overlay, dataDev, checksDev)
-
+    dataDev = await CX.DataDevice.create()
+    checksDev = await CX.IDBDevice.create('netrunner_vm_checks')
+    disposables.push(cloud, overlayIdb, overlay, dataDev, checksDev)
     vm = await CX.Linux.create({
       mounts: [
         { type: 'ext2', path: '/', dev: overlay },
@@ -142,22 +127,19 @@ async function makeRealBackend(mission) {
       ],
     })
   } catch (err) {
-    for (const d of dispoables) { try { d.delete() } catch { /* already gone */ } }
+    for (const d of disposables) { try { d.delete() } catch { /* gone */ } }
     throw new Error(`full dive boot failed: ${(err && err.message) || err}`)
   }
 
-  // --- console plumbing -------------------------------------------------------
   const cbs = []
   const decoder = new TextDecoder()
-  const encoder = new TextEncoder()
-  // Geometry is fixed at console creation; jackin's fit() generally lands in
-  // this ballpark. Full-screen TUI apps may disagree by a column — acceptable.
-  const kbWrite = vm.setCustomConsole((buf) => {
+  // All VM stdout/stderr funnels here and out to the terminal.
+  vm.setCustomConsole(buf => {
     const s = decoder.decode(buf, { stream: true })
     for (const cb of cbs) cb(s)
-  }, 110, 30)
+  }, 120, 40)
 
-  // --- replay the mission layout into the VM ----------------------------------
+  // Replay the mission layout into the VM.
   const setup = buildSetupScript(mission)
   await dataDev.writeFile('/setup.sh', setup)
   try {
@@ -166,51 +148,70 @@ async function makeRealBackend(mission) {
     throw new Error(`full dive mission setup failed: ${(err && err.message) || err}`)
   }
 
-  // --- interactive shell (not awaited: lives as long as the session) ----------
+  let cwd = '/home/user'
   let exitedFlag = false
   let disposed = false
-  vm.run('/bin/bash', ['--login'], { env: CX_ENV.slice(), cwd: '/home/user', uid: 1000, gid: 1000 })
-    .then(() => { exitedFlag = true })
-    .catch(() => { exitedFlag = true })
+  let keyNoise = 0
+  let running = false
 
-  // --- check: run the mission's verification snippet, read the sentinel -------
+  const sh = q => `'${String(q).replace(/'/g, `'\\''`)}'`
+
+  async function runLine(line) {
+    if (disposed) return
+    const raw = String(line == null ? '' : line)
+    if (raw === '\x03') return
+    const trimmed = raw.trim()
+    if (trimmed === 'exit' || trimmed === 'logout') { exitedFlag = true; return }
+    if (!trimmed) return
+    keyNoise += raw.length * 0.02
+    running = true
+    // Run in a fresh bash but restore cwd first, then persist the new cwd. Output
+    // streams to the custom console; we only side-channel the resulting pwd.
+    const script = `cd ${sh(cwd)} 2>/dev/null\n${raw}\npwd > /checks/.cwd 2>/dev/null`
+    try {
+      await vm.run('/bin/bash', ['-lc', script], { env: CX_ENV.slice(), cwd, uid: 1000, gid: 1000 })
+      try {
+        const blob = await checksDev.readFileAsBlob('/.cwd')
+        const next = (await blob.text()).trim()
+        if (next) cwd = next
+      } catch { /* pwd capture optional */ }
+    } catch (err) {
+      for (const cb of cbs) cb(`\x1b[38;2;255;46;136mdeck fault: ${(err && err.message) || err}\x1b[0m\n`)
+    } finally {
+      running = false
+    }
+  }
+
   let checking = false
   async function realCheck() {
-    if (disposed || checking) return false
-    if (!mission.realCheck) return false
+    if (disposed || checking || running || !mission.realCheck) return false
     checking = true
     try {
       const cmd = `rm -f /checks/result; { ${mission.realCheck} ; } > /checks/result 2>/dev/null || true`
       await vm.run('/bin/bash', ['-c', cmd], { env: CX_ENV.slice(), cwd: '/' })
       const blob = await checksDev.readFileAsBlob('/result')
-      const txt = (await blob.text()).trim()
-      return txt.includes('OK')
-    } catch {
-      return false
-    } finally {
-      checking = false
-    }
+      return (await blob.text()).trim().includes('OK')
+    } catch { return false }
+    finally { checking = false }
   }
 
-  let keyNoise = 0
+  const tilde = p => (p === '/home/user' ? '~' : p.startsWith('/home/user/') ? '~' + p.slice(10) : p)
+
   return {
     mode: 'real',
     banner: makeBanner(mission, 'real'),
-    write(data) {
-      if (disposed) return
-      keyNoise += data.length * 0.02
-      for (const byte of encoder.encode(data)) kbWrite(byte)
-    },
-    onData(cb) { cbs.push(cb) },
-    resize() { /* console geometry fixed at creation — documented no-op */ },
+    onOutput(cb) { cbs.push(cb); return () => { const i = cbs.indexOf(cb); if (i >= 0) cbs.splice(i, 1) } },
+    promptStr() { return `${B}${C}user@${mission.host}${R}:${Y}${tilde(cwd)}${R}$ ` },
+    runLine,
+    complete(line) { return { line, suggestions: [] } }, // real bash completion offline is out of scope
     check() { return realCheck() },
     noise() { const n = keyNoise; keyNoise = 0; return n },
     exited() { return exitedFlag },
     dispose() {
       disposed = true
       cbs.length = 0
-      try { vm.delete() } catch { /* vm already torn down */ }
-      for (const d of dispoables) { try { d.delete() } catch { /* already gone */ } }
+      try { vm.delete() } catch { /* torn down */ }
+      for (const d of disposables) { try { d.delete() } catch { /* gone */ } }
     },
   }
 }
@@ -222,8 +223,7 @@ function buildSetupScript(mission) {
   const roots = new Set()
   let fileNo = 0
 
-  const permsToOctal = (perms) => {
-    // 'drwxr-x---' -> '750'
+  const permsToOctal = perms => {
     let oct = ''
     for (let c = 0; c < 3; c++) {
       const bits = perms.slice(1 + c * 3, 4 + c * 3)
@@ -256,7 +256,6 @@ function buildSetupScript(mission) {
   }
   walk(mission.fs || {}, '')
 
-  // Hand the mission tree to the interactive (uid 1000) user.
   for (const root of roots) {
     if (root === '/etc' || root === '/tmp') continue
     lines.push(`chown -R 1000:1000 '${root}' 2>/dev/null || true`)

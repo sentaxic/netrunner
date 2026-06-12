@@ -43,7 +43,7 @@ export class Actor {
     // wandering
     this.path = Array.isArray(path) && path.length ? path : null
     this.wpI = 0
-    this.waitT = this.path ? Math.random() * 1.5 : 0
+    this.waitT = this.path ? Math.random() * 0.7 : 0
     this.idle = false               // scene may enable: idle NPCs glance around
     this.idleT = 2 + Math.random() * 4
     this.hidden = false
@@ -137,7 +137,7 @@ export class Actor {
         const wp = this.path[this.wpI]
         if (wp.x === this.tx && wp.y === this.ty) {
           this.wpI = (this.wpI + 1) % this.path.length
-          this.waitT = 0.8 + Math.random() * 2.2     // linger — cities idle
+          this.waitT = 0.3 + Math.random() * 1.1     // brief pause, then move on — keep the street alive
         } else {
           const dx = Math.sign(wp.x - this.tx)
           const dy = Math.sign(wp.y - this.ty)

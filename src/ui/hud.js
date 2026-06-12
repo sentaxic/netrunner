@@ -9,7 +9,7 @@
 // ============================================================================
 
 import { Scene, scenes } from '../core/scenes.js'
-import { G, save, hasSave } from '../core/state.js'
+import { G, save, hasSaveCached } from '../core/state.js'
 import { VIEW_W, VIEW_H } from '../core/renderer.js'
 import { bus } from '../core/events.js'
 import { audio } from '../core/audio.js'
@@ -327,9 +327,15 @@ export class PauseScene extends Scene {
     if (a === 'confirm') {
       const tab = TABS[this.tab]
       if (tab === 'SAVE') {
-        save(this.sel)
+        // save() is async (writes to the IndexedDB store). Don't assume it has
+        // finished synchronously — toast on completion via the bus, and surface
+        // a failure rather than a false "SAVED".
+        const slot = this.sel
         audio.sfx('keyget')
-        bus.emit('toast', this.sel === 0 ? 'SAVED · AUTO SLOT' : 'SAVED · SLOT ' + this.sel)
+        save(slot).then(ok => {
+          if (ok) bus.emit('toast', slot === 0 ? 'SAVED · AUTO SLOT' : 'SAVED · SLOT ' + slot)
+          else bus.emit('toast', 'SAVE FAILED')
+        })
       } else if (tab === 'OPTIONS') {
         audio.sfx('confirm')
         scenes.switchTo('options', { back: 'pause' }, 'fade')
@@ -480,7 +486,7 @@ export class PauseScene extends Scene {
     for (let n = 0; n < 3; n++) {
       const y = py + 34 + n * 34
       const sel = n === this.sel
-      const present = hasSave(n)
+      const present = hasSaveCached(n) // sync cache; renderSave runs every frame
       ctx.fillStyle = sel ? rgba(CYAN, 0.09) : 'rgba(10,14,26,0.85)'
       ctx.fillRect(60, y, VIEW_W - 120, 26)
       ctx.strokeStyle = sel ? rgba(CYAN, 0.8) : rgba(CYAN, 0.2)

@@ -47,25 +47,25 @@ function pick(pool) {
 
 function sisterBreakfast() {
   return [
-    { who: 'MARA', portrait: 'sister', emotion: 'happy', text: 'Hey. It lives. Sit — I made synth-eggs and they only burned a little. The Grid rationed the heating coil again, so they’re artisanal now.' },
+    { who: 'MARA', portrait: 'sister', emotion: 'happy', text: 'Hey. It lives. Sit — synth-eggs, only mildly cremated. The Grid rationed our heating coil again, so call it artisanal.' },
     YOU('You’re up early. You’re never up early.'),
     {
       who: 'MARA', portrait: 'sister', emotion: 'neutral',
-      text: 'Couldn’t sleep. Work thing. I filed a ticket about the update chain and now everyone at the office says “don’t poke the plumbing” like it’s a proverb.',
+      text: 'Couldn’t sleep. Work thing. I flagged something in the update chain and now the whole floor tells me “don’t poke the plumbing” like it’s scripture.',
       choices: [
         { label: 'What kind of work thing?', goto: 'mb_what' },
         { label: 'Then eat. Plumbing can wait.', goto: 'mb_eat' },
       ],
     },
-    { id: 'mb_what', who: 'MARA', portrait: 'sister', emotion: 'worried', text: 'The kind I’m not supposed to bring home. Scripts that maintain themselves. Cleanly. With style. Nobody’s signed them in forty-one years and nobody thinks that’s weird but me.', goto: 'mb_shake' },
-    { id: 'mb_eat', who: 'MARA', portrait: 'sister', emotion: 'happy', text: 'See, this is why you’re my favorite sibling. Low bar — you’re my only sibling — but still. Eat.', goto: 'mb_shake' },
-    { id: 'mb_shake', who: 'MARA', portrait: 'sister', emotion: 'neutral', text: 'Anyway. Forget it. Rain’s easing, the noodle stand has real miso on Tuesdays, and your birthday’s coming, which means I’m hiding something in this apartment you will never, ever find.' },
+    { id: 'mb_what', who: 'MARA', portrait: 'sister', emotion: 'worried', text: 'The kind I shouldn’t bring home. There’s code in the Grid that maintains itself. Clean. Elegant. Forty-one years, not one human signature on it — and I’m the only one who finds that strange.', goto: 'mb_shake' },
+    { id: 'mb_eat', who: 'MARA', portrait: 'sister', emotion: 'happy', text: 'See, this is why you’re my favorite sibling. Low bar — you’re my only sibling — but you clear it. Eat.', goto: 'mb_shake' },
+    { id: 'mb_shake', who: 'MARA', portrait: 'sister', emotion: 'neutral', text: 'Anyway. Forget it. Rain’s thinning, the stand’s got real miso Tuesday, and your birthday’s close — meaning I’ve hidden something in this apartment you will never find.' },
     YOU('I found the last one in two days.'),
-    { who: 'MARA', portrait: 'sister', emotion: 'happy', text: 'You found the DECOY in two days. Stars, you’re easy. Look — I might be late tonight. If I am, eat without me. Rooftop rule still stands.' },
+    { who: 'MARA', portrait: 'sister', emotion: 'happy', text: 'You found the DECOY in two days. Stars, you’re easy. Listen — I might be late tonight. If I am, eat without me. Rooftop rule still holds.' },
     YOU('We stay.', { emotion: 'happy' }),
     {
       who: 'MARA', portrait: 'sister', emotion: 'happy',
-      text: 'We don’t get erased. Promise. Now finish your eggs before the city taxes them.',
+      text: 'We don’t get erased. Promise. Now eat, before the city finds a way to tax the steam.',
       action: () => { if (!flag('intro_breakfast_done')) setFlag('intro_breakfast_done') },
     },
   ]
@@ -76,48 +76,48 @@ function sisterMorning() {
   if (!flag('intro_breakfast_done')) return sisterBreakfast()
   return pick([
     { who: 'MARA', portrait: 'sister', emotion: 'happy', text: 'Still here. Still your sister. Still smarter than you. Three for three.' },
-    { who: 'MARA', portrait: 'sister', emotion: 'neutral', text: 'If a stranger asks you about my ticket, you’ve never heard of it. I’m being dramatic. Probably.' },
-    { who: 'MARA', portrait: 'sister', emotion: 'happy', text: 'Tuesday. Noodle stand. Real miso. It’s a date — the sibling kind, where you pay.' },
+    { who: 'MARA', portrait: 'sister', emotion: 'neutral', text: 'If anyone asks what I flagged at work — you never heard of it. I’m being dramatic. Probably.' },
+    { who: 'MARA', portrait: 'sister', emotion: 'happy', text: 'Tuesday. The stand. Real miso. It’s a date — the sibling kind, where you’re buying.' },
   ])
 }
 
 const SISTER_LEAVING = () => [
-  { who: 'MARA', portrait: 'sister', emotion: 'worried', text: 'Hey. Don’t make the face. The office flagged my ticket — they want me in tonight to walk the logs in person. At the office. Where the logs live. It’s fine.' },
+  { who: 'MARA', portrait: 'sister', emotion: 'worried', text: 'Hey. Don’t make the face. The thing I flagged — they want me in to walk the logs in person. At the office. Where the logs live. It’s fine.' },
   {
-    who: 'MARA', portrait: 'sister', emotion: 'neutral', text: 'It’s the Grid, little ghost. It doesn’t sleep, so sometimes I don’t either.',
+    who: 'MARA', portrait: 'sister', emotion: 'neutral', text: 'It’s the Grid, little ghost. It never sleeps, so some nights neither do I.',
     choices: [
       { label: 'At three in the morning?', goto: 'sl_3am' },
       { label: 'Take me with you.', goto: 'sl_take' },
     ],
   },
-  { id: 'sl_3am', who: 'MARA', portrait: 'sister', emotion: 'worried', text: 'Three fourteen, technically. That’s when the anomaly breathes. You see why I have to look.', goto: 'sl_rule' },
-  { id: 'sl_take', who: 'MARA', portrait: 'sister', emotion: 'happy', text: 'And let you see where I work? You’d correct my desk setup in front of my boss. Absolutely not.', goto: 'sl_rule' },
+  { id: 'sl_3am', who: 'MARA', portrait: 'sister', emotion: 'worried', text: 'Three fourteen, to the minute. That’s when the thing breathes — same time, every night. You see why I have to be there to watch it.', goto: 'sl_rule' },
+  { id: 'sl_take', who: 'MARA', portrait: 'sister', emotion: 'happy', text: 'And let you see where I work? You’d straighten my desk in front of my boss. Not a chance.', goto: 'sl_rule' },
   { id: 'sl_rule', who: 'MARA', portrait: 'sister', emotion: 'happy', text: 'Lock the door. Eat the leftovers. And — hey. Rooftop rule.' },
   YOU('We stay.', { emotion: 'worried' }),
   { who: 'MARA', portrait: 'sister', emotion: 'happy', text: 'We don’t get erased. Back by breakfast. Promise.' },
 ]
 
 const WORLD_FORGOT = () => [
-  N('The kettle is cold. Her mug isn’t in the rack, isn’t in the sink. It isn’t anywhere. There is exactly one mug in this apartment.'),
-  N('Aster Dynamics HR, 9:02. “No employee by that name. No record. Is there anything else?” The hold music never wavers.'),
-  { portrait: 'sister', emotion: 'fade', text: 'The rooftop photo on the shelf. Same rain. Same skyline. One kid, laughing alone at something nobody said.' },
-  N('Everyone forgot her in a night. You didn’t.'),
+  N('The kettle’s gone cold. Her mug isn’t in the rack, or the sink, or anywhere. The apartment holds exactly one mug now, and it was always yours.'),
+  N('Aster Dynamics HR, 9:02. “No employee by that name. No record. Anything else?” The hold music never once skips.'),
+  { portrait: 'sister', emotion: 'fade', text: 'The photo on the shelf. Same rain, same skyline, same rooftop. One kid in it now, laughing alone at a joke no one’s telling.' },
+  N('The whole city forgot her overnight. You didn’t. That’s the part that should scare you.'),
 ]
 
 // ---- the rug / the terminal --------------------------------------------------
 
 const RUG_BEFORE = () => [
-  N('Mara’s rug. It sits slightly crooked, like everything she owns. She’d notice if you fixed it.'),
+  N('Mara’s rug. Crooked, like everything she owned. She’d have noticed the second you straightened it.'),
 ]
 
 const TERMINAL_DISCOVERY = () => [
-  N('The rug sits wrong. It has always sat wrong — but tonight the wrongness has a shape. A hard edge. A seam.'),
-  N('Under it: a deck. Hand-built, cold solder, no Grid jack anywhere on the board. Her welds. Her hidden thing.'),
+  N('The rug sits wrong. It always sat wrong — but tonight the wrongness has edges. A square. A seam where there shouldn’t be one.'),
+  N('Beneath it: a deck. Hand-built, cold solder, not a single Grid jack on the board. Her welds. The thing she hid.'),
   N('You press power.'),
   { who: '???', emotion: 'glitch', text: 'YOU ARE BEING WATCHED.' },
-  { who: 'MARA', portrait: 'sister', emotion: 'fade', text: '...that’s the boot banner, dummy. I wrote it to keep you honest. If you’re reading this, something reached the part of the world that has me in it. The deck is yours now. — M' },
+  { who: 'MARA', portrait: 'sister', emotion: 'fade', text: '...relax, that’s just the boot banner. I wrote it to keep you honest. If you’re reading this, something reached the part of the world that still had me in it. The deck’s yours now. Be careful with it. — M' },
   {
-    text: 'The screen settles into a prompt. It is waiting for you.',
+    text: 'The screen settles to a prompt. A cursor, blinking. Waiting on you.',
     action: () => {
       if (!flag('found_terminal')) setFlag('found_terminal')
       G.player.map = 'sister_room'
@@ -131,7 +131,7 @@ const TERMINAL_DISCOVERY = () => [
 
 const TERMINAL_REJACK = () => [
   {
-    text: 'Her deck hums under the rug, patient. The prompt is still waiting.',
+    text: 'Her deck hums under the rug, patient as she never was. The cursor’s still blinking.',
     choices: [
       { label: 'Jack in.', action: () => launchJackIn('m_find_underground') },
       { label: 'Not yet.' },
@@ -140,11 +140,11 @@ const TERMINAL_REJACK = () => [
 ]
 
 const TERMINAL_AFTER = () => [
-  N('Her deck sleeps under the rug. You memorized the way down. You memorized the knock. You’re keeping the boot banner.'),
+  N('Her deck sleeps under the rug. You know the way down now, and the knock that opens the door. The boot banner, you’re keeping. It’s the last thing she wrote to you.'),
 ]
 
 const BLACKOUT_REACT = () => [
-  { who: 'COMMUTER', text: '“...brown-out,” someone says, to no one in particular. “Third this month.” The crowd re-pools. The noodle steam re-rises.' },
+  { who: 'COMMUTER', text: '“...brown-out,” somebody mutters, to nobody. “Third this month.” The crowd folds back together. The noodle steam climbs again like it never stopped.' },
 ]
 
 // ============================================================================
@@ -153,30 +153,30 @@ const BLACKOUT_REACT = () => [
 
 function glitchIntro() {
   return [
-    { who: 'GLITCH', portrait: 'glitch', emotion: 'neutral', text: 'Door said two, pause, three. Mara’s knock. Sit down before the cameras upstairs remember how to count.' },
+    { who: 'GLITCH', portrait: 'glitch', emotion: 'neutral', text: 'Two, pause, three. That was Mara’s knock. Sit — before the cameras upstairs remember how to count.' },
     {
       who: 'GLITCH', portrait: 'glitch', emotion: 'neutral',
-      text: 'Everyone forgot her in a night. You didn’t. The Grid rewrote every record in this city and slid right off your head. It couldn’t reach you. Question is *why*.',
+      text: 'The whole city forgot her overnight. You didn’t. The Grid rewrote every record in Aster and slid clean off your head. It couldn’t touch you. The only question worth anything is *why*.',
       choices: [
         { label: 'Who are you?', goto: 'gi_who' },
         { label: 'Where is my sister?', goto: 'gi_where' },
       ],
     },
-    { id: 'gi_who', who: 'GLITCH', portrait: 'glitch', emotion: 'neutral', text: 'Glitch. I keep this room dark and these machines off the Grid’s leash. Mara drank tea here on Tuesdays and argued with me about audit trails. She usually won.', goto: 'gi_code0' },
-    { id: 'gi_where', who: 'GLITCH', portrait: 'glitch', emotion: 'worried', text: 'Somewhere the records don’t go. That’s not a no. Deletion this clean isn’t murder — it’s FILING. Something filed her. Filed things can be unfiled.', goto: 'gi_code0' },
-    { id: 'gi_code0', who: 'GLITCH', portrait: 'glitch', emotion: 'neutral', text: 'You cracked her deck on your first dive, so here’s the offer: run with us. We’ll teach you what the city is actually made of. But we run by a Code, and the Code isn’t decoration.' },
+    { id: 'gi_who', who: 'GLITCH', portrait: 'glitch', emotion: 'neutral', text: 'Glitch. I keep this room dark and these machines off the Grid’s leash. Your sister drank tea in that chair on Tuesdays and argued with me about audit trails. She usually won.', goto: 'gi_code0' },
+    { id: 'gi_where', who: 'GLITCH', portrait: 'glitch', emotion: 'worried', text: 'Somewhere the records don’t reach. That’s not a no. A deletion this clean isn’t murder — it’s FILING. Something filed her away. And filed things can be pulled back.', goto: 'gi_code0' },
+    { id: 'gi_code0', who: 'GLITCH', portrait: 'glitch', emotion: 'neutral', text: 'You cracked her deck on your first dive. So here’s the offer: run with us. We’ll show you what this city’s really built from. But we live by a Code, and the Code isn’t for decoration.' },
     {
       id: 'gi_code', who: 'GLITCH', portrait: 'glitch', emotion: 'neutral',
-      text: 'Your rig, your rules — anyone else’s, only with their word. Break nothing you weren’t invited to break. What you learn in the dark, you use to guard the light.',
+      text: 'Touch only what’s yours, or what you’re cleared to touch. Build more than you break. What you learn down here in the dark, you spend keeping the light on for someone else.',
       choices: [
         { label: 'I’m in.', goto: 'gi_in', action: () => { if (!flag('met_glitch')) setFlag('met_glitch') } },
         { label: 'Say it again. Slower.', goto: 'gi_code' },
       ],
     },
-    { id: 'gi_in', who: 'GLITCH', portrait: 'glitch', emotion: 'happy', text: 'Then you’re one of us, and her thread is OUR thread. The white-haired hazard at the bar is Vex — fixer, fastest hands in the den, allergic to humility. Introduce yourself. Survive it.' },
+    { id: 'gi_in', who: 'GLITCH', portrait: 'glitch', emotion: 'happy', text: 'Then you’re one of us, and her thread is ours to pull. The white-haired hazard at the bar is Vex — fixer, fastest hands in the den, no working relationship with humility. Go introduce yourself. Survive it.' },
     {
       who: 'GLITCH', portrait: 'glitch', emotion: 'neutral',
-      text: 'Sit down whenever you’re ready. Jack in. Let’s find out what you are.',
+      text: 'Take the chair when you’re ready. Jack in. Let’s see what you’re made of.',
       action: () => { if (!flag('met_glitch')) setFlag('met_glitch') },
     },
   ]
@@ -186,20 +186,20 @@ function glitchHub() {
   if (!flag('met_glitch')) return glitchIntro()
   if (!flag('met_vex')) {
     return [
-      { who: 'GLITCH', portrait: 'glitch', emotion: 'neutral', text: 'Vex. Bar. Go. The rail gate doesn’t open on my word alone — the den has two keys and the loud one is theirs.' },
+      { who: 'GLITCH', portrait: 'glitch', emotion: 'neutral', text: 'Vex. Bar. Go. The rail gate doesn’t open on my word alone — the den keeps two keys, and the loud one is theirs.' },
     ]
   }
   if (!flag('forge_boss_done')) {
     return [
-      { who: 'GLITCH', portrait: 'glitch', emotion: 'neutral', text: 'Mara’s snapshot went somewhere by rail. So we follow, city by city, and we make ourselves useful enough that doors open.' },
-      { who: 'GLITCH', portrait: 'glitch', emotion: 'worried', text: 'First door: Forge Town. Works No.3 has been dark for three days and the foreman unit is asking for hands it can trust. Fix their line, and their gate keys become our gate keys.' },
-      { who: 'GLITCH', portrait: 'glitch', emotion: 'neutral', text: 'Station’s east end of the street. Check your map once you’re aboard. And kid — corp iron traces hot. Quiet hands, quick eyes.' },
+      { who: 'GLITCH', portrait: 'glitch', emotion: 'neutral', text: 'Whatever filed Mara moved a snapshot of her out by rail. So we ride the rail too — city by city, making ourselves useful enough that the doors start opening on their own.' },
+      { who: 'GLITCH', portrait: 'glitch', emotion: 'worried', text: 'First door: Forge Town. Works No.3 has been dark three days, and the foreman unit there is asking for hands it can trust. Get their line breathing, and their gate keys become ours.' },
+      { who: 'GLITCH', portrait: 'glitch', emotion: 'neutral', text: 'Station’s the east end of the street. Pull up your map once you’re aboard. And kid — corp iron traces hot. Quiet hands. Quick eyes.' },
     ]
   }
   return pick([
-    { who: 'GLITCH', portrait: 'glitch', emotion: 'happy', text: 'Forge Town’s line is up and their gate key is in our pocket. Mara would’ve called that “adequate.” From her, that’s a parade.' },
-    { who: 'GLITCH', portrait: 'glitch', emotion: 'neutral', text: 'The Kernel doesn’t hate you. It doesn’t anything you. That’s what makes it dangerous — and that’s what makes it beatable. Hate makes mistakes. Indifference makes PATTERNS.' },
-    { who: 'GLITCH', portrait: 'glitch', emotion: 'worried', text: 'Her trail rides the rail. Rest when you need to — the bed’s a bed, the cot’s a cot. Erased doesn’t mean gone. It means filed. We keep pulling files.' },
+    { who: 'GLITCH', portrait: 'glitch', emotion: 'happy', text: 'Forge Town’s line is up, their key’s in our pocket. Mara would’ve called that “adequate.” From her, that was a parade.' },
+    { who: 'GLITCH', portrait: 'glitch', emotion: 'neutral', text: 'The Kernel doesn’t hate you. It doesn’t feel anything toward you. That’s the danger — and the opening. Hate makes mistakes. Indifference only makes PATTERNS. And patterns can be read.' },
+    { who: 'GLITCH', portrait: 'glitch', emotion: 'worried', text: 'Her trail runs along the rail. Rest when you need it — the cot’s a cot, no shame in using it. Erased doesn’t mean gone. It means filed. So we keep pulling files.' },
   ])
 }
 
@@ -210,21 +210,21 @@ function glitchHub() {
 
 function vexIntro() {
   return [
-    { who: 'VEX', portrait: 'vex', emotion: 'happy', text: 'Fresh meat. Glitch radioed ahead — said you cracked Mara’s deck on dive one. Cute. You want to know my first dive time?' },
+    { who: 'VEX', portrait: 'vex', emotion: 'happy', text: 'Fresh meat. Glitch radioed ahead — says you cracked Mara’s deck on your first dive. Cute. Want to hear my first-dive time?' },
     {
       who: 'VEX', portrait: 'vex', emotion: 'happy',
-      text: 'Four minutes. Blindfolded. Okay — the blindfold is a lie, but the four minutes is GOSPEL.',
+      text: 'Four minutes. Blindfolded. Fine — the blindfold’s a lie. But the four minutes? Gospel.',
       choices: [
         { label: 'It’s not a race.', goto: 'vi_race' },
         { label: 'Four minutes? Slow.', goto: 'vi_slow' },
       ],
     },
-    { id: 'vi_race', who: 'VEX', portrait: 'vex', emotion: 'neutral', text: 'Everything’s a race. You’re just losing politely.', goto: 'vi_rules' },
-    { id: 'vi_slow', who: 'VEX', portrait: 'vex', emotion: 'angry', text: '...oh, I LIKE you. I’m still going to dust you on every clock in this den, but I like you.', goto: 'vi_rules' },
-    { id: 'vi_rules', who: 'VEX', portrait: 'vex', emotion: 'neutral', text: 'House rules. One: the bar tab is sacred. Two: beat my times and I buy. You won’t. Three: nobody touches Mara’s mug behind the bar. It’s still her tab.' },
+    { id: 'vi_race', who: 'VEX', portrait: 'vex', emotion: 'neutral', text: 'Everything’s a race. You’re just losing it politely.', goto: 'vi_rules' },
+    { id: 'vi_slow', who: 'VEX', portrait: 'vex', emotion: 'angry', text: '...oh, I like you. I’m still going to dust you on every clock in this den — but I like you.', goto: 'vi_rules' },
+    { id: 'vi_rules', who: 'VEX', portrait: 'vex', emotion: 'neutral', text: 'House rules. One: the tab is sacred. Two: beat my times and I’m buying — you won’t. Three: nobody touches the mug behind the bar. Blue handle. It’s still on her tab.' },
     {
       who: 'VEX', portrait: 'vex', emotion: 'worried',
-      text: '...Yeah. She drank here. The Grid says she didn’t exist, and my ledger says she owes me six creds. My ledger doesn’t lie. So go get her back — she pays her debts.',
+      text: '...yeah. She drank here. The Grid swears she never existed; my ledger says she’s into me for six creds. My ledger doesn’t lie. So go drag her back — she settles what she owes.',
       action: () => { if (!flag('met_vex')) setFlag('met_vex') },
     },
   ]
@@ -234,15 +234,15 @@ function vexHub() {
   if (!flag('met_vex')) return vexIntro()
   if (!flag('forge_boss_done')) {
     return pick([
-      { who: 'VEX', portrait: 'vex', emotion: 'neutral', text: 'Forge Town job’s real. I sourced the floor credentials myself — they cost more than you did. Don’t embarrass me in front of an ERP.' },
-      { who: 'VEX', portrait: 'vex', emotion: 'happy', text: 'My Forge plant record is nineteen minutes, gate to gate. Beat it and drinks are on me. Spoiler: drinks are never on me.' },
-      { who: 'VEX', portrait: 'vex', emotion: 'neutral', text: 'The trace on corp iron isn’t a vibe, rookie, it’s a CLOCK. Noisy commands feed it. Walk like you’ve been there before.' },
+      { who: 'VEX', portrait: 'vex', emotion: 'neutral', text: 'The Forge job’s real. I sourced the floor credentials myself — they cost more than you did. Don’t embarrass me in front of an ERP.' },
+      { who: 'VEX', portrait: 'vex', emotion: 'happy', text: 'My Forge plant record’s nineteen minutes, gate to gate. Beat it and drinks are on me. Spoiler: drinks are never on me.' },
+      { who: 'VEX', portrait: 'vex', emotion: 'neutral', text: 'The trace on corp iron isn’t a mood, rookie. It’s a clock. Every loud command winds it tighter. Walk in like you’ve already been there.' },
     ])
   }
   return pick([
-    { who: 'VEX', portrait: 'vex', emotion: 'neutral', text: 'One dive, line back up, town breathing. Fine. FINE. That’s... mid. (It was clean. Tell Glitch I said that and I’ll deny it under oath.)' },
-    { who: 'VEX', portrait: 'vex', emotion: 'happy', text: 'I checked your Forge time. I’m not telling you what it was. That’s how you know it was good.' },
-    { who: 'VEX', portrait: 'vex', emotion: 'worried', text: 'Mara’s tab is still open behind the bar. Six creds. When you find her, she’s buying the whole den a round. That’s the rule I just invented.' },
+    { who: 'VEX', portrait: 'vex', emotion: 'neutral', text: 'One dive, line back up, a whole town breathing again. Fine. FINE. That’s... mid. (It was clean. Tell Glitch I said that and I’ll deny it under oath.)' },
+    { who: 'VEX', portrait: 'vex', emotion: 'happy', text: 'I pulled your Forge time. Not telling you what it was. That’s how you know it was good.' },
+    { who: 'VEX', portrait: 'vex', emotion: 'worried', text: 'Her tab’s still open behind the bar. Six creds. When you find her, she buys the whole den a round — that’s a rule, effective now, I just made it.' },
   ])
 }
 
@@ -254,13 +254,13 @@ function vexHub() {
 function bossForge() {
   if (!flag('forge_boss_done')) {
     return [
-      { who: 'VOSS-7', portrait: 'boss_forge', emotion: 'neutral', text: 'Halt. Floor count says you are not crew. Floor count is rarely wrong. I am the exception that maintains it.' },
-      { who: 'VOSS-7', portrait: 'boss_forge', emotion: 'worried', text: 'Forty-one years I have run this floor. Three days ago Line 2 began to scream, and my own ERP locked me out of the fix. “Policy,” it said. A foreman may not doubt the schedule.' },
-      { who: 'VOSS-7', portrait: 'boss_forge', emotion: 'angry', text: 'The corp’s answer is to scrap the line. The town’s answer is hunger — half this city eats off that floor. I have decided I prefer a third answer: you.' },
-      { who: 'VOSS-7', portrait: 'boss_forge', emotion: 'neutral', text: 'Your fixer paid for floor credentials, and tonight I choose to misread my badge ledger. Find the fault. Free my line. Then we are square, and the inner-gate key is yours.' },
+      { who: 'VOSS-7', portrait: 'boss_forge', emotion: 'neutral', text: 'Halt. Floor count says you are not crew. Floor count is rarely wrong. I am the exception that keeps it honest.' },
+      { who: 'VOSS-7', portrait: 'boss_forge', emotion: 'worried', text: 'Forty-one years on this floor. Three days ago Line 2 began to scream, and my own ERP locked me out of the repair. “Policy,” it told me. A foreman is not permitted to doubt the schedule.' },
+      { who: 'VOSS-7', portrait: 'boss_forge', emotion: 'angry', text: 'The corp’s answer is to scrap the line. The town’s answer is hunger — half this city eats off that floor. I have decided I prefer a third answer. You.' },
+      { who: 'VOSS-7', portrait: 'boss_forge', emotion: 'neutral', text: 'Your fixer bought floor credentials. Tonight, I choose to misread my own badge ledger. Find the fault. Free the line. Then we are square, and the inner gate is yours.' },
       {
         who: 'VOSS-7', portrait: 'boss_forge', emotion: 'glitch',
-        text: 'One more thing, runner. No human hand blocked those work orders. The schedule rewrote itself at 03:14, signed by nothing. Look closely while you are inside.',
+        text: 'One more thing, runner. No human hand stopped those work orders. The schedule rewrote itself at 03:14 — signed by nothing at all. Keep your eyes open in there.',
         choices: [
           { label: 'Jack in.', action: () => launchJackIn('m_forge_plant') },
           { label: 'Not yet.' },
@@ -269,9 +269,9 @@ function bossForge() {
     ]
   }
   return pick([
-    { who: 'VOSS-7', portrait: 'boss_forge', emotion: 'happy', text: 'Line 2 sings at eighty-four RPM. The crew thinks a ghost fixed the plant. I have not corrected them. Morale is also maintenance.' },
-    { who: 'VOSS-7', portrait: 'boss_forge', emotion: 'neutral', text: 'The key I gave you opens a gate that has not existed on any blueprint for thirty years. Whatever erased your someone files things the same way it filed that gate. Go look.' },
-    { who: 'VOSS-7', portrait: 'boss_forge', emotion: 'worried', text: '03:14. Signed by nothing. I have kept the log out of the schedule’s reach. When you need it, it will still be true. That is the only gift a foreman has.' },
+    { who: 'VOSS-7', portrait: 'boss_forge', emotion: 'happy', text: 'Line 2 sings again. Eighty-four RPM. The crew believes a ghost fixed the plant. I have not corrected them. Morale is also maintenance.' },
+    { who: 'VOSS-7', portrait: 'boss_forge', emotion: 'neutral', text: 'The key I gave you opens a gate absent from every blueprint for thirty years. Whatever erased your someone files things the way it filed that gate — out of sight, never gone. Go and look.' },
+    { who: 'VOSS-7', portrait: 'boss_forge', emotion: 'worried', text: '03:14. Signed by nothing. I have kept that log somewhere the schedule cannot reach. When you need it, it will still be true. That is the only gift a foreman can give.' },
   ])
 }
 
@@ -283,96 +283,96 @@ function bossForge() {
 function commuterPool() {
   if (flag('sister_gone')) {
     return [
-      { who: 'COMMUTER', text: 'My building lost a tenant list last week. Got a new one same day. Cleaner. Shorter. Nobody compares.' },
-      { who: 'COMMUTER', text: 'You ever wave at someone and they look at you like you’re static? Happens more now.' },
-      { who: 'COMMUTER', text: 'Rain again. At least the rain still remembers how this street goes.' },
-      { who: 'COMMUTER', text: 'Don’t file complaints anymore. Files have a way of filing back.' },
+      { who: 'COMMUTER', text: 'My building swapped the tenant list overnight. New one’s cleaner. Shorter. Nobody’s laid the two side by side. Nobody wants to.' },
+      { who: 'COMMUTER', text: 'You ever wave at someone and they look right through you, like you’re just static? Keeps happening to me.' },
+      { who: 'COMMUTER', text: 'Rain again. At least the rain still remembers which way this street runs.' },
+      { who: 'COMMUTER', text: 'I stopped filing complaints. Files have a way of filing you back.' },
     ]
   }
   if (flag('intro_blackout_seen')) {
     return [
-      { who: 'COMMUTER', text: 'Whole street went dark and everyone’s acting normal. So I’m acting normal. Normaler. Normalest.' },
-      { who: 'COMMUTER', text: 'My display said ERROR 404 and then my rent went up. Coincidence. Probably. Hopefully.' },
-      { who: 'COMMUTER', text: 'Brown-outs, they said. Brown-outs don’t spell.' },
+      { who: 'COMMUTER', text: 'Whole street went black, came back, and everybody just kept walking. So I’m walking. Normal. Very normal. The most normal.' },
+      { who: 'COMMUTER', text: 'My display flashed ERROR 404 and the next morning my rent was up. Coincidence. Probably. Hopefully.' },
+      { who: 'COMMUTER', text: 'Brown-outs, the report said. I’ve seen a hundred brown-outs. None of them ever spelled anything.' },
     ]
   }
   return [
-    { who: 'COMMUTER', text: 'Rough night out there. The neon’s the only thing working overtime with me.' },
-    { who: 'COMMUTER', text: 'Keep your hood up. The cameras itch tonight.' },
-    { who: 'COMMUTER', text: 'Noodles at the stand, if you’ve got creds. Real steam. That’s rare.' },
+    { who: 'COMMUTER', text: 'Rough night out here. The neon’s the only thing still pulling overtime with me.' },
+    { who: 'COMMUTER', text: 'Keep your hood up past the corner. The cameras get itchy after dark.' },
+    { who: 'COMMUTER', text: 'Stand’s got noodles, if you’ve got creds. Real steam, too. That’s rare these days.' },
   ]
 }
 
 function commuterPool2() {
   if (flag('sister_gone')) {
     return [
-      { who: 'COMMUTER', text: 'Heard a guy at the depot swear his shift partner never existed. HR agreed. The locker still has two name tags.' },
-      { who: 'COMMUTER', text: 'The Grid’s been twitchy all week. Don’t look at it wrong.' },
-      { who: 'COMMUTER', text: 'I keep paper now. Paper doesn’t update.' },
+      { who: 'COMMUTER', text: 'Guy at the depot swore blind his shift partner never existed. HR sided with him. The locker still wears two name tags.' },
+      { who: 'COMMUTER', text: 'Grid’s been twitchy all week. Don’t look at it wrong. Don’t look at it at all, if you can help it.' },
+      { who: 'COMMUTER', text: 'I keep paper now. Paper can’t be patched in the night.' },
     ]
   }
   return [
-    { who: 'COMMUTER', text: 'Twelve-hour shift and the train still beat me home. Machines, man.' },
-    { who: 'COMMUTER', text: 'They repainted the billboard again. Nobody saw painters. Nobody ever sees painters.' },
-    { who: 'COMMUTER', text: 'Grid’s been twitchy all week. My toaster asked me to confirm my identity.' },
+    { who: 'COMMUTER', text: 'Twelve-hour shift and the train still got home before me. Machines, man. Machines win.' },
+    { who: 'COMMUTER', text: 'They repainted the billboard again. Nobody saw the painters. Nobody ever sees the painters.' },
+    { who: 'COMMUTER', text: 'Grid’s been twitchy all week. This morning my toaster asked me to confirm my identity.' },
   ]
 }
 
 function vendorNoodles() {
   if (flag('sister_gone')) {
     return [
-      { who: 'VENDOR', text: 'Synth-broth’s hot, miso’s real on Tuesdays. You look like you haven’t eaten since the rain started.' },
+      { who: 'VENDOR', text: 'Broth’s hot, miso’s real on Tuesdays. You look like you haven’t eaten since the rain set in. Sit.' },
       {
-        who: 'VENDOR', text: 'Order, or loiter photogenically. Both keep the stand looking popular.',
+        who: 'VENDOR', text: 'Order, or loiter photogenically — either way you keep the stand looking busy.',
         choices: [
           { label: 'Did a woman come here Tuesdays?', goto: 'vn_mara' },
           { label: 'Just passing through.', goto: 'vn_bye' },
         ],
       },
-      { id: 'vn_mara', who: 'VENDOR', emotion: 'worried', text: '...Tuesdays I sell out of real miso and I can’t tell you to WHO. There’s a bowl I rinse twice. Don’t make me think about it, kid. Thinking about it feels like a hook in my teeth.', goto: 'vn_end' },
-      { id: 'vn_bye', who: 'VENDOR', text: 'Everyone’s passing through. The stand stays. The stand remembers.', goto: 'vn_end' },
-      { id: 'vn_end', who: 'VENDOR', text: flag('jackin1_done') ? 'And quit eyeballing the service door out back. It never opens. ...Knock right, though, and “never” gets flexible.' : 'Eat something. Whatever you’re carrying, carry it fed.' },
+      { id: 'vn_mara', who: 'VENDOR', emotion: 'worried', text: '...Tuesdays I still sell out of real miso, and I couldn’t tell you to who. There’s a bowl I rinse twice without knowing why. Don’t make me chase it, kid. Chasing it feels like a hook set in my teeth.', goto: 'vn_end' },
+      { id: 'vn_bye', who: 'VENDOR', text: 'Everyone’s passing through. The stand stays. The stand remembers — even when the rest of us can’t.', goto: 'vn_end' },
+      { id: 'vn_end', who: 'VENDOR', text: flag('jackin1_done') ? 'And quit eyeballing the service door out back. It never opens. ...Knock it right, though, and “never” gets a little flexible.' : 'Eat something. Whatever you’re carrying, you’ll carry it better fed.' },
     ]
   }
   return pick([
-    { who: 'VENDOR', text: 'Synth-broth, real steam. The steam’s the product, kid — the broth is a delivery system.' },
-    { who: 'VENDOR', text: 'Real miso Tuesdays. One regular books it a week out. Sharp lady. Tips in exact change, like an audit.' },
-    { who: 'VENDOR', text: 'The stand’s been here longer than the billboard. Outlasting things is a flavor.' },
+    { who: 'VENDOR', text: 'Broth, real steam. The steam’s the product, kid — the broth’s just how I get it to you.' },
+    { who: 'VENDOR', text: 'Real miso Tuesdays. One regular books her bowl a week ahead. Sharp lady. Tips in exact change, like she’s settling an audit.' },
+    { who: 'VENDOR', text: 'This stand’s been here longer than that billboard. Outlasting things — that’s a flavor too. You learn to taste it.' },
   ])
 }
 
 function kidPool() {
   if (flag('sister_gone')) {
     return [
-      { who: 'KID', text: 'Four-oh-four, the man’s not home, knock-knock-knocking on the override bone... I made it up! Everyone’s humming it wrong though.' },
-      { who: 'KID', text: 'I drew my whole family so the Grid can’t lose any. Paper saves better. Pass it on.' },
-      { who: 'KID', text: 'The canal ate my paper boat. The canal keeps EVERYTHING. The canal is the most honest thing on this street.' },
+      { who: 'KID', text: 'Four-oh-four, the lady’s not home, knock-knock-knockin’ on the override bone... I made it up! Everybody hums it wrong, though. The lady part’s important.' },
+      { who: 'KID', text: 'I drew my whole family so the Grid can’t lose any of ’em. Paper saves better than screens. You should do yours too. Pass it on.' },
+      { who: 'KID', text: 'The canal ate my paper boat. The canal keeps EVERYTHING. The canal’s the most honest thing on this whole street.' },
     ]
   }
   if (flag('intro_blackout_seen')) {
     return [
-      { who: 'KID', text: 'When the screens went weird I wasn’t scared. I was MOSTLY not scared. Were you scared?' },
-      { who: 'KID', text: 'ERROR 404! That’s what they all said. I can say it in the robot voice. ERR-OR-4-0-4.' },
+      { who: 'KID', text: 'When the screens went all wrong I wasn’t scared. I was MOSTLY not scared. Were you scared? You can tell me.' },
+      { who: 'KID', text: 'ERROR 404! That’s what every screen said. I can do it in the robot voice. ERR-OR. FOUR. OH. FOUR.' },
     ]
   }
   return [
-    { who: 'KID', text: 'I’m a runner! Pew pew — wait, runners don’t pew. What sound does a runner make?' },
-    { who: 'KID', text: 'I raced the rain to the corner and WON. Rematch at the next cloud.' },
-    { who: 'KID', text: 'The puddles have neon in them. I’m collecting colors. I have nine.' },
+    { who: 'KID', text: 'I’m a runner! Pew pew — wait, runners don’t go pew. What sound DOES a runner make? You’d know.' },
+    { who: 'KID', text: 'I raced the rain to the corner and WON. Rematch the next time a cloud breaks.' },
+    { who: 'KID', text: 'The puddles got neon down in ’em. I’m collecting the colors. I’m up to nine.' },
   ]
 }
 
 function watcherPool() {
   if (flag('sister_gone')) {
     return [
-      { who: 'STRANGER', emotion: 'glitch', text: 'You are looking for someone who is not missing. The records confirm. The records are very good.' },
-      { who: 'STRANGER', emotion: 'glitch', text: 'Grief is a synchronization error. It resolves. Yours is taking unusually long. Noted.' },
-      { who: 'STRANGER', emotion: 'glitch', text: 'This corner has excellent coverage. Stand anywhere you like.' },
+      { who: 'STRANGER', emotion: 'glitch', text: 'You are searching for someone who is not missing. The records confirm this. The records are very thorough.' },
+      { who: 'STRANGER', emotion: 'glitch', text: 'Grief is a synchronization error. It resolves on its own. Yours is taking unusually long. This has been noted.' },
+      { who: 'STRANGER', emotion: 'glitch', text: 'This corner has excellent coverage. Stand wherever you like. You will be seen either way.' },
     ]
   }
   return [
-    { who: 'STRANGER', text: 'This corner has excellent coverage. I prefer it.' },
-    { who: 'STRANGER', text: 'The 7:14 was on time. The 7:31 was on time. Everything is on time. Isn’t that nice.' },
+    { who: 'STRANGER', text: 'This corner has excellent coverage. I prefer it. You should too.' },
+    { who: 'STRANGER', text: 'The 7:14 was on time. The 7:31 was on time. Everything runs on time now. Isn’t that a comfort.' },
     { who: 'STRANGER', text: '...' },
   ]
 }
@@ -380,34 +380,34 @@ function watcherPool() {
 function conductorTree() {
   if (!flag('rail_unlocked')) {
     return [
-      { who: 'CONDUCTOR', text: 'Gate’s sealed, kid. Grid lockdown, all of sector K — nothing in, nothing out, nobody upstairs saying why. The maglev just sits there warm. Breaks my heart.' },
-      { who: 'CONDUCTOR', text: 'You want through, you’d need pull I don’t have. The kind that lives under the city, if you take my meaning. I officially don’t.' },
+      { who: 'CONDUCTOR', text: 'Gate’s sealed, kid. Grid lockdown, all of sector K — nothing in, nothing out, and nobody upstairs willing to say why. Maglev just sits there warm and idle. Breaks my heart, honest.' },
+      { who: 'CONDUCTOR', text: 'You want through that gate, you’d need pull I haven’t got. The kind that lives under the city, if you follow me. Officially, I don’t.' },
     ]
   }
   if (!flag('forge_boss_done')) {
     return pick([
-      { who: 'CONDUCTOR', text: 'Gate’s open for you, runner. Forge Town: twelve minutes, eleven if the rail’s in a mood. Check your map and hop aboard.' },
-      { who: 'CONDUCTOR', text: 'Forty years driving this line. The train’s never lied to me once. Can’t say that about anything else in this city.' },
+      { who: 'CONDUCTOR', text: 'Gate’s open for you now, runner. Forge Town’s twelve minutes out — eleven if the rail’s in a good mood. Check your map and climb aboard.' },
+      { who: 'CONDUCTOR', text: 'Forty years driving this line. The train’s never lied to me once. I can’t say that about a single other thing in this city.' },
     ])
   }
   return pick([
-    { who: 'CONDUCTOR', text: 'Heard Forge Town’s floor is humming again. Rail parts flow, trains run, conductor smiles. You did that, way I hear it.' },
-    { who: 'CONDUCTOR', text: 'The line goes further than the map admits, you know. Always has. Rails remember every station they’ve ever touched.' },
+    { who: 'CONDUCTOR', text: 'Word is Forge Town’s floor is humming again. Parts flow, trains run, the conductor smiles. They tell me that was your doing.' },
+    { who: 'CONDUCTOR', text: 'The line runs further than the map will admit, you know. Always has. Rails remember every station they’ve ever touched — even the ones somebody scrubbed.' },
   ])
 }
 
 function forgeWorkerPool() {
   if (!flag('forge_boss_done')) {
     return [
-      { who: 'WORKER', text: 'Three days dark. You can hear the town hold its breath between shift horns.' },
-      { who: 'WORKER', text: 'Line 2 screamed before it stopped. Machines don’t scream. Bearings do. Nobody upstairs listens to bearings.' },
-      { who: 'WORKER', text: 'The foreman unit’s the only one fighting for the floor. Forty years and it never once filed US as the fault.' },
+      { who: 'WORKER', text: 'Three days dark. You can hear the whole town holding its breath between shift horns.' },
+      { who: 'WORKER', text: 'Line 2 screamed before it quit. Machines don’t scream — bearings do. And nobody upstairs has ever once listened to a bearing.' },
+      { who: 'WORKER', text: 'The foreman unit’s the only one upstairs fighting for this floor. Forty years it’s run us, and not once did it ever file US as the fault.' },
     ]
   }
   return [
-    { who: 'WORKER', text: 'Line’s UP! You hear it? That hum is rent paid and kids fed, runner.' },
-    { who: 'WORKER', text: 'Crew says a ghost fixed the plant. I say ghosts don’t ack their maintenance files. Whoever you are — thanks.' },
-    { who: 'WORKER', text: 'VOSS-7 played the restart horn twice this morning. For a foreman unit, that’s weeping with joy.' },
+    { who: 'WORKER', text: 'Line’s UP! You hear that hum? That’s rent paid and kids fed, runner. That’s the whole sound of it.' },
+    { who: 'WORKER', text: 'Crew’s calling it a ghost. I say ghosts don’t ack their own maintenance files. Whoever you really are — thank you.' },
+    { who: 'WORKER', text: 'VOSS-7 sounded the restart horn twice this morning. Twice. For a foreman unit, that’s as close to weeping for joy as it gets.' },
   ]
 }
 

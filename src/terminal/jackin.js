@@ -1,15 +1,14 @@
 // ============================================================================
 // NETRUNNER · src/terminal/jackin.js — the jack-in encounter scene.
-// ARCHITECTURE.md §9. Shows #term-layer, mounts xterm, builds a backend
-// ('real' CheerpX VM with graceful fall back to the 'sim' shell), drives the
-// Heat/Trace meter and Glitch's comms, detects the win via mission.check(),
-// emits jackin:win / jackin:lose, then restores the overworld.
+// ARCHITECTURE.md §9. Shows #term-layer, plays the BlackArch deck boot, mounts a
+// bulletproof DOM terminal (native <input> — keyboard can't bug out), builds a
+// line-oriented backend ('real' CheerpX VM with graceful fall back to 'sim'),
+// drives the Heat/Trace meter and Glitch's comms, detects the win via
+// backend.check(), emits jackin:win / jackin:lose, then restores the overworld.
 //
 //   scenes.switchTo('jackin', { missionId: 'm_find_underground' })
 // ============================================================================
 
-import { Terminal } from '@xterm/xterm'
-import { FitAddon } from '@xterm/addon-fit'
 import { Scene, scenes } from '../core/scenes.js'
 import { bus } from '../core/events.js'
 import { G, setFlag } from '../core/state.js'
@@ -18,34 +17,12 @@ import { audio } from '../core/audio.js'
 import { VIEW_W, VIEW_H } from '../core/renderer.js'
 import { makeBackend } from './backend.js'
 import { MISSIONS } from './missions.js'
-
-const TERM_THEME = {
-  background: '#070a12',
-  foreground: '#cfe3ff',
-  cursor: '#29f3e2',
-  cursorAccent: '#05060a',
-  selectionBackground: 'rgba(41,243,226,0.25)',
-  black: '#0d1322',
-  red: '#ff2e88',
-  green: '#6dff7a',
-  yellow: '#ffb547',
-  blue: '#4f7dff',
-  magenta: '#ff2e88',
-  cyan: '#29f3e2',
-  white: '#cfe3ff',
-  brightBlack: '#2a3550',
-  brightRed: '#ff5ea6',
-  brightGreen: '#9dffac',
-  brightYellow: '#ffd08a',
-  brightBlue: '#8fb0ff',
-  brightMagenta: '#ff7cc0',
-  brightCyan: '#7cf9ee',
-  brightWhite: '#eaf4ff',
-}
+import { DomTerm } from './domterm.js'
+import { playBoot } from './boot.js'
 
 const COMMS_DELAY = 0.95      // seconds between queued comms lines
-const FIRST_HINT_AFTER = 22   // idle seconds before the first nudge
-const NEXT_HINT_AFTER = 20    // idle seconds between later nudges
+const FIRST_HINT_AFTER = 24   // idle seconds before the first nudge
+const NEXT_HINT_AFTER = 22    // idle seconds between later nudges
 const NOISE_TO_HEAT = 2.0     // heat per noise unit from the backend
 const TRACE_LOSS_CREDS = 30   // creds burned shaking a completed trace
 
@@ -73,83 +50,56 @@ export class JackInScene extends Scene {
     if (this.heatFill) this.heatFill.style.width = '0%'
     this.layer.classList.remove('hidden')
 
-    // --- run state -------------------------------------------------------------
+    // --- run state -----------------------------------------------------------
     this.backend = null
+    this.unsub = null
     this.heat = 0
     this.t = 0
     this.idle = 0
     this.hintIdx = 0
     this.checkT = 0
     this.checkBusy = false
-    this.closing = false       // any end state reached (win/lose/bail)
-    this.frozen = false        // stop forwarding keys to the backend
-    this.closeAt = null        // countdown to the overworld switch
+    this.closing = false
+    this.closeAt = null
     this.warned50 = false
     this.warned80 = false
     this.commsQ = []
     this.commsT = 0
-    this.pendingKeys = ''       // keys typed before the backend is live (flushed on boot)
+    this.lineBusy = false
 
-    // --- the terminal ------------------------------------------------------------
+    // --- the terminal --------------------------------------------------------
     input.suspend(true)
     audio.play('hack')
-    this.term = new Terminal({
-      fontSize: 14,
-      fontFamily: "'Menlo', 'Consolas', 'DejaVu Sans Mono', monospace",
-      cursorBlink: true,
-      cursorStyle: 'block',
-      scrollback: 2000,
-      theme: TERM_THEME,
-    })
-    this.fit = new FitAddon()
-    this.term.loadAddon(this.fit)
-    this.term.open(this.mount)
-    try { this.fit.fit() } catch { /* zero-size pre-layout */ }
-    requestAnimationFrame(() => { if (!this.dead) { try { this.fit.fit() } catch { /* not mounted */ } } })
-    this.term.focus()
+    this.term = new DomTerm()
+    this.term.mount(this.mount)
+    this.term.setInputEnabled(false) // locked until the deck finishes booting
+    this.term.onLine(line => this._submit(line))
+    this.term.onTab(v => this._complete(v))
 
-    this._onResize = () => {
-      if (this.dead) return
-      try {
-        this.fit.fit()
-        this.backend?.resize(this.term.cols, this.term.rows)
-      } catch { /* layer hidden */ }
-    }
-    addEventListener('resize', this._onResize)
-
-    this.termSub = this.term.onData(d => {
-      if (this.dead || this.frozen) return
-      this.idle = 0
-      // Backend may still be booting (esp. a real full dive). Buffer keystrokes
-      // instead of dropping them, so the terminal never feels dead.
-      if (!this.backend) { this.pendingKeys += d; return }
-      this.backend.write(d)
-    })
-
-    // --- comms: the uplink chatter, then Glitch -----------------------------------
-    this.comms('SYS', `uplink → ${this.mission.host} · negotiating crypt layer…`, true)
+    // --- comms: the uplink chatter, then Glitch ------------------------------
+    this.comms('SYS', `cold-starting deck → ${this.mission.host}…`, true)
     for (const line of (this.mission.intro || [])) this.comms('GLITCH', line)
 
-    this.term.write('\x1b[38;2;120;150;200m  spinning carrier… hold.\x1b[0m\r\n')
-    this._boot()
+    this._start()
   }
 
-  // Resolve a backend: honor G.settings.vmMode, fall back real→sim with a
-  // clear in-fiction message about which link the player is actually on.
-  async _boot() {
+  // Boot the deck (BlackArch sequence), then resolve a backend and go live.
+  async _start() {
+    try { await playBoot(this.term, { host: this.mission.host, skipKeyEl: window }) }
+    catch { /* boot is cosmetic */ }
+    if (this.dead) return
+
     const want = G.settings.vmMode === 'sim' ? ['sim'] : ['real', 'sim']
     if (want[0] === 'real') {
-      this.term.write(`${'\x1b[38;2;120;150;200m'}  full dive — streaming a live linux. first dive can take a moment…\x1b[0m\r\n`)
+      this.term.write('\x1b[38;2;120;150;200m  full dive — streaming a live linux. first dive can take a moment…\x1b[0m\n')
     }
     let backend = null
     let realErr = null
     for (const mode of want) {
       try {
-        // A real full dive streams a large image from CDN; cap the wait so a
-        // slow or stalled link falls back to the instant sim instead of hanging.
         backend = mode === 'real'
           ? await withTimeout(makeBackend('real', this.mission), 25000)
-          : await makeBackend(mode, this.mission)
+          : await makeBackend('sim', this.mission)
         break
       } catch (err) { if (mode === 'real') realErr = err }
     }
@@ -160,37 +110,68 @@ export class JackInScene extends Scene {
       this.closeAt = 1.6
       return
     }
+
     this.backend = backend
+    this.unsub = backend.onOutput(s => { if (!this.dead) this.term.write(s) })
+
     if (realErr) {
       this.comms('SYS', `full dive unavailable (${trim(realErr.message, 70)})`, true)
-      this.comms('GLITCH', 'No real iron tonight — I spun you a local mirror instead. Sandboxed copy, same rules, same commands.')
+      this.comms('GLITCH', 'No real iron tonight — spun you a local mirror. Sandboxed copy, same rules, same commands.')
     }
     this.comms('SYS', backend.mode === 'real'
-      ? 'LINK: FULL DIVE — live x86 vm. it is exactly as real as it feels.'
+      ? 'LINK: FULL DIVE — live x86 vm. as real as it feels.'
       : 'LINK: LOCAL MIRROR — sandboxed sim of the target.', true)
+
     this.term.write(backend.banner || '')
-    this._onResize()
+    this.term.setPrompt(backend.promptStr())
+    this.term.setInputEnabled(true)
     this.term.focus()
-    // replay anything the player typed while we were still spinning up
-    if (this.pendingKeys) {
-      const keys = this.pendingKeys
-      this.pendingKeys = ''
-      queueMicrotask(() => { if (!this.dead && this.backend) this.backend.write(keys) })
+  }
+
+  async _submit(line) {
+    if (this.dead || this.closing || !this.backend) return
+    this.idle = 0
+    if (line === '\x03') { // Ctrl-C between commands
+      this.term.write('^C\n')
+      this.term.setPrompt(this.backend.promptStr())
+      return
     }
+    // echo the typed command into the scrollback, then run it
+    this.term.echoCommand(this.backend.promptStr(), line)
+    if (this.lineBusy) return
+    this.lineBusy = true
+    this.term.setInputEnabled(false)
+    try { await this.backend.runLine(line) }
+    catch { /* backend reports its own faults */ }
+    this.lineBusy = false
+    if (this.dead || this.closing) return
+    this.term.setPrompt(this.backend.promptStr())
+    this.term.setInputEnabled(true)
+    if (this.backend.exited && this.backend.exited()) { this._bailOut(); return }
+  }
+
+  _complete(value) {
+    if (!this.backend) return value
+    try {
+      const r = this.backend.complete(value)
+      if (r && r.suggestions && r.suggestions.length) {
+        this.term.write('\x1b[38;2;120;150;200m' + r.suggestions.join('   ') + '\x1b[0m\n')
+        this.term.setPrompt(this.backend.promptStr())
+      }
+      return r ? r.line : value
+    } catch { return value }
   }
 
   update(dt) {
     if (this.dead) return
     this.t += dt
 
-    // comms queue (staggered so the chatter feels live)
     this.commsT -= dt
     if (this.commsT <= 0 && this.commsQ.length) {
       this._flushComms(this.commsQ.shift())
       this.commsT = COMMS_DELAY
     }
 
-    // countdown to leaving the scene (after win/lose/bail)
     if (this.closeAt !== null) {
       this.closeAt -= dt
       if (this.closeAt <= 0) {
@@ -202,7 +183,7 @@ export class JackInScene extends Scene {
 
     if (!this.backend || this.closing) return
 
-    // ---- heat / trace ------------------------------------------------------------
+    // ---- heat / trace -------------------------------------------------------
     const burst = this.backend.noise ? this.backend.noise() : 0
     this.heat = Math.min(100, this.heat + this.mission.heatRate * dt + burst * NOISE_TO_HEAT)
     if (this.heatFill) this.heatFill.style.width = `${this.heat.toFixed(1)}%`
@@ -217,10 +198,9 @@ export class JackInScene extends Scene {
     }
     if (this.heat >= 100) { this._traceOut(); return }
 
-    // ---- voluntary jack-out (player typed `exit` at the top level) ---------------
     if (this.backend.exited && this.backend.exited()) { this._bailOut(); return }
 
-    // ---- idle hints ----------------------------------------------------------------
+    // ---- idle hints ---------------------------------------------------------
     this.idle += dt
     const hints = this.mission.hints || []
     const wait = this.hintIdx === 0 ? FIRST_HINT_AFTER : NEXT_HINT_AFTER
@@ -229,10 +209,10 @@ export class JackInScene extends Scene {
       this.idle = 0
     }
 
-    // ---- throttled win polling -------------------------------------------------------
+    // ---- throttled win polling ----------------------------------------------
     this.checkT += dt
-    const interval = this.backend.mode === 'real' ? 6 : 1.25
-    if (this.checkT >= interval && !this.checkBusy) {
+    const interval = this.backend.mode === 'real' ? 4 : 1.0
+    if (this.checkT >= interval && !this.checkBusy && !this.lineBusy) {
       this.checkT = 0
       this.checkBusy = true
       Promise.resolve()
@@ -245,31 +225,24 @@ export class JackInScene extends Scene {
     }
   }
 
-  // ---- end states ------------------------------------------------------------------
+  // ---- end states ---------------------------------------------------------
   _win() {
     this.closing = true
-    this.frozen = true
+    this.term.setInputEnabled(false)
     audio.sfx('win')
     audio.play('victory')
     const m = this.mission
     setFlag(m.onWin)
     const r = m.reward || {}
-    if (r.creds) {
-      G.creds += r.creds
-      bus.emit('toast', `+${r.creds}c`)
-    }
-    for (const id of r.kit || []) {
-      if (!G.kit.includes(id)) { G.kit.push(id); bus.emit('kit:add', id) }
-    }
-    for (const id of r.codex || []) {
-      if (!G.codex.includes(id)) { G.codex.push(id); bus.emit('codex:add', id) }
-    }
+    if (r.creds) { G.creds += r.creds; bus.emit('toast', `+${r.creds}c`) }
+    for (const id of r.kit || []) if (!G.kit.includes(id)) { G.kit.push(id); bus.emit('kit:add', id) }
+    for (const id of r.codex || []) if (!G.codex.includes(id)) { G.codex.push(id); bus.emit('codex:add', id) }
     if (m.boss) bus.emit('toast', 'ACCESS-KEY GET')
     bus.emit('jackin:win', this.missionId)
 
     this.term.write(
-      '\r\n\x1b[1;38;2;109;255;122m ▓▓ OBJECTIVE COMPLETE — LINK SECURED ▓▓\x1b[0m\r\n' +
-      '\x1b[38;2;120;150;200m closing carrier… footprints scrubbed.\x1b[0m\r\n'
+      '\n\x1b[1;38;2;109;255;122m ▓▓ OBJECTIVE COMPLETE — LINK SECURED ▓▓\x1b[0m\n' +
+      '\x1b[38;2;120;150;200m closing carrier… footprints scrubbed.\x1b[0m\n'
     )
     this.comms('SYS', 'OBJECTIVE COMPLETE — closing carrier.', true)
     const outro = m.outro || ['Clean work. Pull out.']
@@ -279,7 +252,7 @@ export class JackInScene extends Scene {
 
   _traceOut() {
     this.closing = true
-    this.frozen = true
+    this.term.setInputEnabled(false)
     audio.sfx('glitch')
     audio.sfx('error')
     G.heatLosses++
@@ -287,26 +260,25 @@ export class JackInScene extends Scene {
     G.creds -= loss
 
     this.term.write(
-      '\r\n\x1b[1;31m ▒▒ TRACE LOCK — COUNTER-INTRUSION INBOUND ▒▒\x1b[0m\r\n' +
-      '\x1b[38;2;255;46;136m carrier severed by remote host.\x1b[0m\r\n'
+      '\n\x1b[1;31m ▒▒ TRACE LOCK — COUNTER-INTRUSION INBOUND ▒▒\x1b[0m\n' +
+      '\x1b[38;2;255;46;136m carrier severed by remote host.\x1b[0m\n'
     )
     this.comms('SYS', 'TRACE COMPLETE — position compromised. severing link.', true)
     this.comms('GLITCH', `TRACED — pull out, pull out NOW.${loss ? ` Burning ${loss}c to scatter your shadow. GO.` : ' GO.'}`, true)
-    if (loss) bus.emit('toast', `TRACED · -${loss}c`)
-    else bus.emit('toast', 'TRACED')
+    bus.emit('toast', loss ? `TRACED · -${loss}c` : 'TRACED')
     bus.emit('jackin:lose', this.missionId)
     this.closeAt = 2.4
   }
 
   _bailOut() {
     this.closing = true
-    this.frozen = true
+    this.term.setInputEnabled(false)
     audio.sfx('cancel')
     this.comms('GLITCH', 'Clean disconnect. No trace, no trophy. We can come back at it.', true)
     this.closeAt = 1.3
   }
 
-  // ---- comms ----------------------------------------------------------------------
+  // ---- comms --------------------------------------------------------------
   comms(who, text, instant = false) {
     if (instant) this._flushComms({ who, text })
     else this.commsQ.push({ who, text })
@@ -329,7 +301,7 @@ export class JackInScene extends Scene {
     audio.sfx('blip')
   }
 
-  // ---- canvas behind the translucent layer: drifting data motes ----------------------
+  // ---- canvas behind the translucent layer: drifting data motes -----------
   render(ctx) {
     ctx.fillStyle = '#05060a'
     ctx.fillRect(0, 0, VIEW_W, VIEW_H)
@@ -349,22 +321,15 @@ export class JackInScene extends Scene {
   exit() {
     this.dead = true
     this.closeAt = null
-    removeEventListener('resize', this._onResize)
-    try { this.termSub?.dispose() } catch { /* already gone */ }
-    try { this.backend?.dispose() } catch { /* already gone */ }
+    try { this.unsub?.() } catch { /* gone */ }
+    try { this.backend?.dispose() } catch { /* gone */ }
     this.backend = null
-    try { this.term?.dispose() } catch { /* already gone */ }
+    try { this.term?.dispose() } catch { /* gone */ }
     this.term = null
-    this.fit = null
     if (this.layer) this.layer.classList.add('hidden')
     input.suspend(false)
-    // hand the soundscape back to wherever the body is standing
     const map = G.player.map || ''
-    audio.play(
-      map.startsWith('forge') ? 'forge'
-        : map === 'underground' ? 'underground'
-          : 'aster'
-    )
+    audio.play(map.startsWith('forge') ? 'forge' : map === 'underground' ? 'underground' : 'aster')
   }
 }
 
@@ -374,7 +339,7 @@ function trim(s, n) {
 }
 
 // Resolve a promise or reject after `ms`, so a stalled full-dive boot can't hang
-// the encounter forever — jackin._boot catches the rejection and falls back to sim.
+// the encounter forever — _start catches the rejection and falls back to sim.
 function withTimeout(promise, ms) {
   let timer
   const timeout = new Promise((_, reject) => {

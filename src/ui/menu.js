@@ -10,7 +10,7 @@
 // ============================================================================
 
 import { Scene, scenes } from '../core/scenes.js'
-import { G, hasSave, load, newGame, saveSettings } from '../core/state.js'
+import { G, hasSaveCached, load, newGame, saveSettings } from '../core/state.js'
 import { VIEW_W, VIEW_H, setCRT } from '../core/renderer.js'
 import { audio } from '../core/audio.js'
 import { drawActor } from '../assets/sprites.js'
@@ -189,7 +189,9 @@ export class MenuScene extends Scene {
   entries() {
     return [
       { label: 'NEW GAME', go: () => scenes.switchTo('newgame', {}, 'fade') },
-      { label: 'CONTINUE', disabled: !hasSave(0), go: () => { if (load(0)) scenes.switchTo('overworld', {}, 'glitch') } },
+      // disabled state uses the synchronous cache (entries() runs every frame);
+      // load(0) is async, so switch only after it resolves.
+      { label: 'CONTINUE', disabled: !hasSaveCached(0), go: () => { load(0).then(ok => { if (ok) scenes.switchTo('overworld', {}, 'glitch') }) } },
       { label: 'OPTIONS', go: () => scenes.switchTo('options', { back: 'menu' }, 'fade') },
       { label: 'CREDITS', go: () => scenes.switchTo('credits', {}, 'fade') },
     ]

@@ -10,10 +10,13 @@ export function initRenderer(c) {
   canvas.height = VIEW_H
   ctx = canvas.getContext('2d')
   ctx.imageSmoothingEnabled = false
+  // Scale to FILL the viewport (fractional). 480x270 is exactly 16:9, so on a
+  // 16:9 display this is true edge-to-edge fullscreen; other ratios letterbox on
+  // one axis only. image-rendering:pixelated keeps it crisp.
   const fit = () => {
-    const s = Math.max(1, Math.floor(Math.min(innerWidth / VIEW_W, innerHeight / VIEW_H)))
-    canvas.style.width = VIEW_W * s + 'px'
-    canvas.style.height = VIEW_H * s + 'px'
+    const s = Math.max(1, Math.min(innerWidth / VIEW_W, innerHeight / VIEW_H))
+    canvas.style.width = Math.round(VIEW_W * s) + 'px'
+    canvas.style.height = Math.round(VIEW_H * s) + 'px'
   }
   addEventListener('resize', fit)
   fit()
@@ -35,3 +38,10 @@ export function frame(cb) {
 }
 
 export function setCRT(on) { document.body.classList.toggle('crt', !!on) }
+
+export function toggleFullscreen() {
+  try {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen?.()
+    else document.exitFullscreen?.()
+  } catch { /* fullscreen may be blocked; the fill-to-viewport scaling already applies */ }
+}

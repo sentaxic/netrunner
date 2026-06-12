@@ -563,6 +563,74 @@ export class SimShell {
     this.out(this.promptStr())
   }
 
+  // ---- line-mode API ----------------------------------------------------------------
+  // For the DOM terminal: a native <input> owns line editing (so the keyboard can
+  // never bug out), and we just execute whole submitted lines. The raw input()
+  // path above is left intact for any other consumer. execLine does NOT echo the
+  // command or print a following prompt — the DOM terminal owns those.
+  async execLine(line) {
+    if (this.exited) return
+    const raw = String(line == null ? '' : line)
+    if (raw === '\x03') return // Ctrl-C: nothing is running between lines
+    const trimmed = raw.trim()
+    if (trimmed && (this.hist.length === 0 || this.hist[this.hist.length - 1] !== trimmed)) {
+      this.hist.push(trimmed)
+      if (this.hist.length > HIST_MAX) this.hist.shift()
+    }
+    this.busy = true
+    try {
+      if (this.mode === 'sql') await Promise.resolve(this._sqlLine(trimmed))
+      else await Promise.resolve(this._runLine(raw))
+    } catch (err) {
+      this.write(`${A.red}deck fault: ${(err && err.message) || err}${A.reset}\n`)
+    } finally {
+      this.busy = false
+      this._interrupt = false
+    }
+  }
+
+  // Pure tab-completion for line mode: returns { line, suggestions }. No side effects,
+  // no output — the DOM terminal applies the completed line / prints suggestions.
+  complete(line) {
+    const upto = String(line == null ? '' : line)
+    if (this.mode === 'sql') return { line: upto, suggestions: [] }
+    let start = 0, q = null
+    for (let i = 0; i < upto.length; i++) {
+      const ch = upto[i]
+      if (q) { if (ch === q) q = null; continue }
+      if (ch === "'" || ch === '"') { q = ch; continue }
+      if (ch === ' ' || ch === '\t' || ch === '|' || ch === '>') start = i + 1
+    }
+    const prefix = upto.slice(start)
+    const isFirst = upto.slice(0, start).trim().replace(/.*[|]/, '').trim() === ''
+    let candidates = []
+    if (isFirst && !prefix.includes('/')) {
+      candidates = Object.keys(this.commands).filter(c => c.startsWith(prefix)).sort()
+        .map(c => ({ ins: c, label: c, dir: false }))
+    } else {
+      const slash = prefix.lastIndexOf('/')
+      const dirPart = slash >= 0 ? prefix.slice(0, slash + 1) : ''
+      const base = slash >= 0 ? prefix.slice(slash + 1) : prefix
+      const dirNode = this._node(this._abs(dirPart === '' ? '.' : dirPart))
+      if (!dirNode || dirNode.type !== 'dir') return { line: upto, suggestions: [] }
+      for (const name of [...dirNode.children.keys()].sort()) {
+        if (!name.startsWith(base)) continue
+        if (name.startsWith('.') && !base.startsWith('.')) continue
+        const child = dirNode.children.get(name)
+        candidates.push({ ins: dirPart + name, label: name + (child.type === 'dir' ? '/' : ''), dir: child.type === 'dir' })
+      }
+    }
+    if (!candidates.length) return { line: upto, suggestions: [] }
+    if (candidates.length === 1) {
+      const c = candidates[0]
+      return { line: upto.slice(0, start) + c.ins + (c.dir ? '/' : ' '), suggestions: [] }
+    }
+    let lcp = candidates[0].ins
+    for (const c of candidates) { while (!c.ins.startsWith(lcp)) lcp = lcp.slice(0, -1) }
+    if (lcp.length > prefix.length) return { line: upto.slice(0, start) + lcp, suggestions: [] }
+    return { line: upto, suggestions: candidates.map(c => c.label) }
+  }
+
   _redraw() {
     this.out('\r\x1b[K' + this.promptStr() + this.buffer)
     const back = this.buffer.length - this.cursor

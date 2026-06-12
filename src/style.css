@@ -15,10 +15,10 @@ body.crt #game::after {
 body.crt canvas#screen { filter: saturate(1.12) contrast(1.05); }
 
 /* ---- Jack-in terminal layer ---- */
-#term-layer { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; background: rgba(2,3,8,0.92); }
+#term-layer { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; background: rgba(2,3,8,0.96); }
 #term-layer.hidden { display: none; }
 #term-frame {
-  width: min(92vw, 1100px); height: min(88vh, 720px);
+  width: min(97vw, 1400px); height: min(95vh, 900px);
   display: flex; flex-direction: column;
   background: #070a12; border: 2px solid #173;
   border-color: #1d4a52;
@@ -36,8 +36,36 @@ body.crt canvas#screen { filter: saturate(1.12) contrast(1.05); }
 #heat { position: relative; width: 160px; height: 10px; background: #131a2e; border: 1px solid #2a3550; }
 #heat-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #29f3e2, #ffb547 60%, #ff2e88); transition: width 0.25s; }
 #heat-label { position: absolute; right: -46px; top: -2px; color: #ff2e88; font-size: 10px; }
-#term-mount { flex: 1; padding: 8px; min-height: 0; }
-#term-mount .xterm { height: 100%; }
+#term-mount { flex: 1; padding: 0; min-height: 0; display: flex; }
+
+/* ---- DOM terminal (native-input, never bugs out) ---- */
+.dt {
+  flex: 1; min-height: 0; min-width: 0;
+  display: flex; flex-direction: column;
+  font-family: 'Menlo', 'DejaVu Sans Mono', 'Consolas', monospace;
+  font-size: 14.5px; line-height: 1.5;
+  color: #cfe3ff;
+  padding: 8px 12px 10px;
+  cursor: text;
+}
+.dt-scroll {
+  flex: 1; min-height: 0; overflow-y: auto;
+  white-space: pre-wrap; word-break: break-word;
+  text-shadow: 0 0 5px rgba(41,243,226,0.10);
+}
+.dt-scroll::-webkit-scrollbar { width: 8px; }
+.dt-scroll::-webkit-scrollbar-thumb { background: #1d4a52; border-radius: 4px; }
+.dt-echo { white-space: pre-wrap; word-break: break-word; }
+.dt-cmd { color: #eaf4ff; }
+.dt-line { display: flex; align-items: baseline; padding-top: 3px; }
+.dt-prompt { white-space: pre; flex: 0 0 auto; }
+.dt-input {
+  flex: 1 1 auto; min-width: 0;
+  background: transparent; border: none; outline: none;
+  color: #eaf4ff; font: inherit; caret-color: #29f3e2;
+  text-shadow: 0 0 6px rgba(41,243,226,0.25);
+  padding: 0; margin: 0;
+}
 #term-comms {
   max-height: 110px; overflow-y: auto;
   border-top: 1px solid #143a40; padding: 6px 14px;

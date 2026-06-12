@@ -1,7 +1,6 @@
 // NETRUNNER boot. Wires core engine + scenes. Module contracts: see ARCHITECTURE.md.
 import './style.css'
-import '@xterm/xterm/css/xterm.css'
-import { initRenderer, frame, setCRT } from './core/renderer.js'
+import { initRenderer, frame, setCRT, toggleFullscreen } from './core/renderer.js'
 import { scenes } from './core/scenes.js'
 import { input } from './core/input.js'
 import { G } from './core/state.js'
@@ -34,6 +33,7 @@ scenes.register('intro', new IntroScene())
 addEventListener('keydown', e => {
   audio.unlock()
   if (input.suspended) return // jack-in terminal owns the keyboard
+  if (e.code === 'KeyF' && !e.ctrlKey && !e.metaKey) { toggleFullscreen(); return }
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault()
   if (dialogueActive()) dialogueKey(e)
   else scenes.onKey(e)

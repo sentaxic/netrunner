@@ -115,7 +115,7 @@ export class IntroScene extends Scene {
       this.blackTarget = 1
       audio.play('sister')
     }))
-    S.push(C('ASTER CITY', 'year 2189 · the rain is older than you', 2.8, true))
+    S.push(C('ASTER CITY', 'year 2189 · the rain is older than anyone left to remember it', 2.8, true))
     S.push(F(0, 1.2))
     S.push(W(0.7))
     S.push(D(() => { this.sister.facePoint(this.player.tx, this.player.ty) }))
@@ -123,7 +123,7 @@ export class IntroScene extends Scene {
     S.push(D(() => { if (!flag('intro_breakfast_done')) setFlag('intro_breakfast_done') }))
     S.push(W(0.5))
     S.push(F(1, 0.9))
-    S.push(C('LATER.', null, 1.6, true))
+    S.push(C('LATER. THE RAIN HASN’T QUIT.', null, 1.6, true))
 
     // ---- beat 2: the street, then the blackout --------------------------------
     S.push(D(() => {
@@ -132,17 +132,17 @@ export class IntroScene extends Scene {
       audio.play('aster')
     }))
     S.push(F(0, 1.0))
-    S.push(FREE(8, 'ARROWS / WASD — WALK'))
+    S.push(FREE(8, 'ARROWS / WASD — WALK THE STREET'))
     S.push(D(() => this.startBlackout()))
     S.push(W(6.4))
     S.push(D(() => this.endBlackout()))
     S.push(W(1.0))
     S.push(SAY('blackout_react'))
-    S.push(C('By dinner, nobody mentions it. The city has agreed it never happened.', null, 3.2, false))
+    S.push(C('By dinner, no one mentions it. The city has quietly agreed it never happened.', null, 3.2, false))
 
     // ---- beat 3: night — she leaves -------------------------------------------
     S.push(F(1, 1.1))
-    S.push(C('THAT NIGHT.', null, 2.0, true))
+    S.push(C('THAT NIGHT. 03:14 IS STILL HOURS AWAY.', null, 2.0, true))
     S.push(D(() => {
       this.loadMap('apartment', 5, 6, 'down', { npcs: false })
       this.spawnSister(6, 7, 'up')
@@ -156,10 +156,10 @@ export class IntroScene extends Scene {
     S.push(D(() => { this.sister.hidden = true; audio.sfx('step') }))
     S.push(W(1.0))
     S.push(F(1, 1.4))
-    S.push(C('You wake at 03:14 to every screen in the building breathing.', null, 3.0, true))
+    S.push(C('You wake at 03:14 to every screen in the building breathing in the dark.', null, 3.0, true))
     S.push(C('She is not home by breakfast.', null, 2.4, true))
-    S.push(C('She is not home by night.', null, 2.4, true))
-    S.push(C('On the third day you stop saying her name out loud. The walls feel like they report it.', null, 3.4, true))
+    S.push(C('She is not home by nightfall.', null, 2.4, true))
+    S.push(C('By the third day you stop saying her name aloud. The walls feel like they’re logging it.', null, 3.4, true))
     S.push(D(() => {
       if (!flag('sister_gone')) setFlag('sister_gone')
       this.loadMap('apartment', 5, 6, 'up', { npcs: false }) // her chair is just a chair now
@@ -173,7 +173,7 @@ export class IntroScene extends Scene {
 
     // ---- beat 4: her room, the rug, the deck -----------------------------------
     S.push(F(1, 0.8))
-    S.push(C('Her room, then.', null, 1.8, true))
+    S.push(C('Her room, then. Where else.', null, 1.8, true))
     S.push(D(() => {
       this.loadMap('sister_room', 3, 5, 'up', { npcs: false })
       this.tint = [10, 14, 40, 0.46]

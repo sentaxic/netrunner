@@ -1,5 +1,13 @@
 // Global game state + save/load. The single source of truth is `G`.
+//
+// Saves now live in a real local database (IndexedDB) via src/data/savedb.js —
+// on-theme, and sturdier than a localStorage JSON blob. save/load/hasSave/
+// autosave are therefore ASYNC. Settings stay in localStorage: they're small,
+// must be read synchronously at boot (before first render), and never need the
+// DB. A synchronous `hasSaveCached(n)` mirrors slot presence for per-frame UI
+// (menu CONTINUE, pause Save tab) that cannot await.
 import { bus } from './events.js'
+import { putSave, getSave, hasSaveDB, deleteSave, listSaves } from '../data/savedb.js'
 
 const DEFAULT_SETTINGS = {
   crt: true,
@@ -31,24 +39,77 @@ export const G = {
 export function setFlag(k, v = true) { G.flags[k] = v; bus.emit('flag', { k, v }) }
 export function flag(k) { return !!G.flags[k] }
 
-const SLOT = n => `netrunner_save_${n}`
+const SLOT = n => `netrunner_save_${n}` // legacy localStorage key (migration only)
 
-export function save(n = 0) {
-  const { settings, ...rest } = G
-  localStorage.setItem(SLOT(n), JSON.stringify(rest))
+// ---- synchronous presence cache --------------------------------------------
+// IndexedDB reads are async, but the menu/pause UI tests slot presence every
+// frame. We keep a small cache of which slots hold data, refreshed at boot and
+// after every save/delete, and expose it synchronously via hasSaveCached().
+const _saveCache = [false, false, false]
+
+function _setCache(n, present) {
+  if (n >= 0 && n < _saveCache.length) _saveCache[n] = !!present
 }
-export function hasSave(n = 0) { return !!localStorage.getItem(SLOT(n)) }
-export function load(n = 0) {
-  const raw = localStorage.getItem(SLOT(n))
-  if (!raw) return false
+
+// Re-probe all slots from the DB and update the sync cache.
+export async function refreshSaveCache() {
   try {
-    const data = JSON.parse(raw)
-    Object.assign(G, data)
-    G.settings = loadSettings()
-    return true
-  } catch { return false }
+    const rows = await listSaves()
+    for (let n = 0; n < _saveCache.length; n++) _saveCache[n] = false
+    for (const r of rows) _setCache(r.slot, true)
+  } catch { /* leave cache as-is on failure */ }
+  return _saveCache.slice()
 }
-export function autosave() { save(0); bus.emit('toast', 'AUTOSAVED') }
+
+// Synchronous, per-frame-safe presence check (reads the cache).
+export function hasSaveCached(n = 0) { return !!_saveCache[n] }
+
+// Build the small meta summary stored alongside each save (for slot lists).
+function saveMeta() {
+  return {
+    name: G.player.name, map: G.player.map,
+    day: G.clock.day, creds: G.creds, rep: G.rep,
+  }
+}
+
+// Persist the live state (minus settings) to the DB. Async; resolves to bool.
+export async function save(n = 0) {
+  const { settings, ...rest } = G
+  // Deep-clone via JSON so we store a plain serializable snapshot, not live refs.
+  let data
+  try { data = JSON.parse(JSON.stringify(rest)) } catch { data = rest }
+  const ok = await putSave(n, data, saveMeta())
+  if (ok) _setCache(n, true)
+  return ok
+}
+
+// Definitive (async) presence check against the DB.
+export async function hasSave(n = 0) { return hasSaveDB(n) }
+
+// Load a slot into G. Async; resolves true on success, false if absent/error.
+export async function load(n = 0) {
+  const data = await getSave(n)
+  if (!data) return false
+  Object.assign(G, data)
+  G.settings = loadSettings() // settings live in localStorage, never in the save blob
+  return true
+}
+
+// Remove a slot. Async; keeps the sync cache in step.
+export async function deleteSlot(n = 0) {
+  const ok = await deleteSave(n)
+  if (ok) _setCache(n, false)
+  return ok
+}
+
+// Lightweight slot list for UI: [{slot, ts, meta}].
+export async function listSaveSlots() { return listSaves() }
+
+export async function autosave() {
+  const ok = await save(0)
+  bus.emit('toast', 'AUTOSAVED')
+  return ok
+}
 
 export function newGame(name, look) {
   Object.assign(G, {
@@ -66,4 +127,32 @@ export function loadSettings() {
   try { return { ...DEFAULT_SETTINGS, ...JSON.parse(localStorage.getItem('netrunner_settings') || '{}') } }
   catch { return { ...DEFAULT_SETTINGS } }
 }
-G.settings = loadSettings()
+G.settings = loadSettings() // synchronous, before first render — must stay sync
+
+// ---- boot: one-time migration + sync-cache priming ------------------------
+// Import any legacy localStorage saves into the DB once (only if the DB slot is
+// still empty), then prime the synchronous presence cache. The localStorage
+// copy is left in place — harmless.
+async function _migrateLegacySaves() {
+  for (let n = 0; n < _saveCache.length; n++) {
+    let raw
+    try { raw = localStorage.getItem(SLOT(n)) } catch { raw = null }
+    if (!raw) continue
+    try {
+      if (await hasSaveDB(n)) continue // DB already has this slot — don't clobber
+      const data = JSON.parse(raw)
+      await putSave(n, data, {
+        name: data?.player?.name, map: data?.player?.map,
+        day: data?.clock?.day, creds: data?.creds, rep: data?.rep,
+      })
+    } catch { /* skip a corrupt legacy slot */ }
+  }
+}
+
+// Kick the boot probe off immediately (non-blocking). The cache starts all-false,
+// so CONTINUE is greyed until this resolves a frame or two later — correct, since
+// at that point we genuinely don't yet know if a save exists.
+;(async () => {
+  await _migrateLegacySaves()
+  await refreshSaveCache()
+})()

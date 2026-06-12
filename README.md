@@ -81,6 +81,12 @@ npm run dev        # → http://localhost:3009
 | Shift | run |
 | I | pause menu (Kit · Codex · Quests · Save) |
 | M | rail map (once unlocked) |
+| F | toggle fullscreen |
+
+When you jack in, the deck cold-starts on **BlackArch Linux** before handing you a
+shell. The terminal is a native input field (rock-solid — no dropped keystrokes),
+with tab-completion, command history, and `man` pages. Your progress saves to a
+local **IndexedDB** database, not a flat file.
 
 In a jack-in, the keyboard is the terminal. `help` lists what your deck can do; `man`
 works. Watch the **TRACE** meter — your actions leave real logs, and something reads them.
