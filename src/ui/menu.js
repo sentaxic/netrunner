@@ -512,6 +512,12 @@ export class OptionsScene extends Scene {
         adj: d => { s.sfxVol = Math.round(Math.max(0, Math.min(1, s.sfxVol + (d || 1) * 0.1)) * 10) / 10; audio.setVols() },
       },
       { label: 'COLOR-SAFE MODE', value: s.colorblind ? 'ON' : 'OFF', adj: () => { s.colorblind = !s.colorblind } },
+      {
+        label: 'JACK-IN LINK',
+        value: s.vmMode === 'real' ? 'FULL DIVE' : 'LOCAL MIRROR',
+        adj: () => { s.vmMode = s.vmMode === 'real' ? 'sim' : 'real' },
+        hint: s.vmMode === 'real' ? 'real x86 linux · streams ~600MB on first dive' : 'instant · sandboxed · works offline',
+      },
       { label: 'BACK', exit: true },
     ]
   }
@@ -572,6 +578,13 @@ export class OptionsScene extends Scene {
         else txt(ctx, row.value, x0 + 152, y, col, '9px monospace')
       }
     })
+
+    // hint for the selected row (e.g. what the jack-in link actually does)
+    const selRow = rows[this.sel]
+    if (selRow && selRow.hint) {
+      txt(ctx, selRow.hint, VIEW_W / 2, 196, rgba(AMBER, 0.85), '7px monospace', 'center')
+      ctx.textAlign = 'left'
+    }
 
     // live text-speed sample, looping forever in its little cage
     const cps = { 1: 16, 2: 36, 3: 72 }[G.settings.textSpeed] || 36

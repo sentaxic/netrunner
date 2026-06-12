@@ -6,7 +6,11 @@ const DEFAULT_SETTINGS = {
   textSpeed: 2,        // 1 slow, 2 normal, 3 fast
   musicVol: 0.7,
   sfxVol: 0.8,
-  vmMode: 'ask',       // 'ask' | 'real' (CheerpX full dive) | 'sim' (local sandbox)
+  colorblind: false,
+  // 'sim' = instant in-browser shell (default; works offline, same real commands).
+  // 'real' = CheerpX full-dive x86 Linux (streams a ~600MB image from CDN; opt-in
+  // via Options). 'ask' tries real first then falls back to sim.
+  vmMode: 'sim',
 }
 
 export const G = {

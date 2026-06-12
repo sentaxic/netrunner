@@ -88,6 +88,7 @@ export class JackInScene extends Scene {
     this.warned80 = false
     this.commsQ = []
     this.commsT = 0
+    this.pendingKeys = ''       // keys typed before the backend is live (flushed on boot)
 
     // --- the terminal ------------------------------------------------------------
     input.suspend(true)
@@ -117,8 +118,11 @@ export class JackInScene extends Scene {
     addEventListener('resize', this._onResize)
 
     this.termSub = this.term.onData(d => {
-      if (this.dead || this.frozen || !this.backend) return
+      if (this.dead || this.frozen) return
       this.idle = 0
+      // Backend may still be booting (esp. a real full dive). Buffer keystrokes
+      // instead of dropping them, so the terminal never feels dead.
+      if (!this.backend) { this.pendingKeys += d; return }
       this.backend.write(d)
     })
 
@@ -134,11 +138,20 @@ export class JackInScene extends Scene {
   // clear in-fiction message about which link the player is actually on.
   async _boot() {
     const want = G.settings.vmMode === 'sim' ? ['sim'] : ['real', 'sim']
+    if (want[0] === 'real') {
+      this.term.write(`${'\x1b[38;2;120;150;200m'}  full dive — streaming a live linux. first dive can take a moment…\x1b[0m\r\n`)
+    }
     let backend = null
     let realErr = null
     for (const mode of want) {
-      try { backend = await makeBackend(mode, this.mission); break }
-      catch (err) { if (mode === 'real') realErr = err }
+      try {
+        // A real full dive streams a large image from CDN; cap the wait so a
+        // slow or stalled link falls back to the instant sim instead of hanging.
+        backend = mode === 'real'
+          ? await withTimeout(makeBackend('real', this.mission), 25000)
+          : await makeBackend(mode, this.mission)
+        break
+      } catch (err) { if (mode === 'real') realErr = err }
     }
     if (this.dead) { try { backend?.dispose() } catch { /* raced exit */ } return }
     if (!backend) {
@@ -158,6 +171,12 @@ export class JackInScene extends Scene {
     this.term.write(backend.banner || '')
     this._onResize()
     this.term.focus()
+    // replay anything the player typed while we were still spinning up
+    if (this.pendingKeys) {
+      const keys = this.pendingKeys
+      this.pendingKeys = ''
+      queueMicrotask(() => { if (!this.dead && this.backend) this.backend.write(keys) })
+    }
   }
 
   update(dt) {
@@ -352,4 +371,14 @@ export class JackInScene extends Scene {
 function trim(s, n) {
   s = String(s || '')
   return s.length > n ? s.slice(0, n - 1) + '…' : s
+}
+
+// Resolve a promise or reject after `ms`, so a stalled full-dive boot can't hang
+// the encounter forever — jackin._boot catches the rejection and falls back to sim.
+function withTimeout(promise, ms) {
+  let timer
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`link timed out after ${Math.round(ms / 1000)}s`)), ms)
+  })
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer))
 }

@@ -41,10 +41,11 @@ modern world — well enough to rebuild it.
 ## What's real
 
 - **The terminal is real.** Jack-in encounters run on a genuine shell: `ls -a`, `cd`,
-  `cat`, `grep -r`, `find`, `chmod`, `man`, pipes, tab-completion, history. An optional
-  **full-dive mode** boots an actual x86 Linux VM in your browser via
-  [CheerpX/WebVM](https://webvm.io) (WebAssembly); a built-in pure-JS shell is the
-  always-available fallback, so the game works fully offline.
+  `cat`, `grep -r`, `find`, `chmod`, `man`, pipes, tab-completion, history. By default
+  this is an instant in-browser shell that works offline. Flip **JACK-IN LINK → FULL
+  DIVE** in Options to boot an actual x86 Linux VM in your browser via
+  [CheerpX/WebVM](https://webvm.io) (WebAssembly) — same commands, real kernel, streamed
+  from CDN on first use.
 - **The databases are real.** In-game corps run schemas modeled on real enterprise
   systems — Workday/SAP-style HR, Active-Directory/Okta-style identity & RBAC with an
   audit log, SAP-ERP/MES-style manufacturing. The SQL you write to find your sister's
