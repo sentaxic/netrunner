@@ -1,0 +1,47 @@
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: #05060a; overflow: hidden; height: 100%; }
+#game { position: fixed; inset: 0; display: grid; place-items: center; background: #05060a; }
+canvas#screen { image-rendering: pixelated; image-rendering: crisp-edges; outline: none; }
+
+/* CRT overlay (toggled via body.crt) */
+body.crt #game::after {
+  content: '';
+  position: absolute; inset: 0; pointer-events: none; z-index: 50;
+  background:
+    repeating-linear-gradient(0deg, rgba(0,0,0,0.18) 0px, rgba(0,0,0,0.18) 1px, transparent 1px, transparent 3px),
+    radial-gradient(ellipse at center, transparent 55%, rgba(0,0,8,0.42) 100%);
+  mix-blend-mode: multiply;
+}
+body.crt canvas#screen { filter: saturate(1.12) contrast(1.05); }
+
+/* ---- Jack-in terminal layer ---- */
+#term-layer { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; background: rgba(2,3,8,0.92); }
+#term-layer.hidden { display: none; }
+#term-frame {
+  width: min(92vw, 1100px); height: min(88vh, 720px);
+  display: flex; flex-direction: column;
+  background: #070a12; border: 2px solid #173;
+  border-color: #1d4a52;
+  border-radius: 8px;
+  box-shadow: 0 0 32px rgba(41,243,226,0.18), inset 0 0 60px rgba(8,12,24,0.9);
+  font-family: 'Menlo', 'Consolas', monospace;
+}
+#term-head {
+  display: flex; align-items: center; gap: 14px;
+  padding: 8px 14px; border-bottom: 1px solid #143a40;
+  color: #29f3e2; font-size: 12px; letter-spacing: 1px;
+}
+#term-host { color: #ffb547; }
+#term-objective { flex: 1; color: #cfe3ff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#heat { position: relative; width: 160px; height: 10px; background: #131a2e; border: 1px solid #2a3550; }
+#heat-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #29f3e2, #ffb547 60%, #ff2e88); transition: width 0.25s; }
+#heat-label { position: absolute; right: -46px; top: -2px; color: #ff2e88; font-size: 10px; }
+#term-mount { flex: 1; padding: 8px; min-height: 0; }
+#term-mount .xterm { height: 100%; }
+#term-comms {
+  max-height: 110px; overflow-y: auto;
+  border-top: 1px solid #143a40; padding: 6px 14px;
+  font-size: 12px; line-height: 1.5; color: #9db4d4;
+}
+#term-comms .who { color: #ff2e88; font-weight: bold; margin-right: 6px; }
+#term-comms .sys { color: #ffb547; }

@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NETRUNNER</title>
+</head>
+<body>
+  <div id="game">
+    <canvas id="screen" tabindex="0"></canvas>
+    <!-- Jack-in layer: the only DOM UI in the game (xterm.js needs real DOM). -->
+    <div id="term-layer" class="hidden">
+      <div id="term-frame">
+        <div id="term-head">
+          <span id="term-host">mara-deck</span>
+          <span id="term-objective"></span>
+          <div id="heat"><div id="heat-fill"></div><span id="heat-label">TRACE</span></div>
+        </div>
+        <div id="term-mount"></div>
+        <div id="term-comms"></div>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
