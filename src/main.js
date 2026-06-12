@@ -53,4 +53,4 @@ frame((dt, t) => {
 })
 
 // Dev/debug hook (used by automated verification too)
-window.NR = { G, scenes, bus, audio }
+window.NR = { G, scenes, bus, audio, dlg: { updateDialogue, renderDialogue, dialogueActive, dialogueKey } }

@@ -165,18 +165,10 @@ function glitchIntro() {
     { id: 'gi_who', who: 'GLITCH', portrait: 'glitch', emotion: 'neutral', text: 'Glitch. I keep this room dark and these machines off the Grid’s leash. Your sister drank tea in that chair on Tuesdays and argued with me about audit trails. She usually won.', goto: 'gi_code0' },
     { id: 'gi_where', who: 'GLITCH', portrait: 'glitch', emotion: 'worried', text: 'Somewhere the records don’t reach. That’s not a no. A deletion this clean isn’t murder — it’s FILING. Something filed her away. And filed things can be pulled back.', goto: 'gi_code0' },
     { id: 'gi_code0', who: 'GLITCH', portrait: 'glitch', emotion: 'neutral', text: 'You cracked her deck on your first dive. So here’s the offer: run with us. We’ll show you what this city’s really built from. But we live by a Code, and the Code isn’t for decoration.' },
+    { id: 'gi_code', who: 'GLITCH', portrait: 'glitch', emotion: 'neutral', text: 'Touch only what’s yours, or what you’re cleared to touch. Build more than you break. What you learn down here in the dark, you spend keeping the light on for someone else.' },
     {
-      id: 'gi_code', who: 'GLITCH', portrait: 'glitch', emotion: 'neutral',
-      text: 'Touch only what’s yours, or what you’re cleared to touch. Build more than you break. What you learn down here in the dark, you spend keeping the light on for someone else.',
-      choices: [
-        { label: 'I’m in.', goto: 'gi_in', action: () => { if (!flag('met_glitch')) setFlag('met_glitch') } },
-        { label: 'Say it again. Slower.', goto: 'gi_code' },
-      ],
-    },
-    { id: 'gi_in', who: 'GLITCH', portrait: 'glitch', emotion: 'happy', text: 'Then you’re one of us, and her thread is ours to pull. The white-haired hazard at the bar is Vex — fixer, fastest hands in the den, no working relationship with humility. Go introduce yourself. Survive it.' },
-    {
-      who: 'GLITCH', portrait: 'glitch', emotion: 'neutral',
-      text: 'Take the chair when you’re ready. Jack in. Let’s see what you’re made of.',
+      id: 'gi_in', who: 'GLITCH', portrait: 'glitch', emotion: 'happy',
+      text: 'Say you’re in. — Good. Then her thread is ours to pull. See the white-haired hazard at the bar, west side? That’s Vex — our fixer, fastest hands in the den, no working relationship with humility. Go introduce yourself. Survive it.',
       action: () => { if (!flag('met_glitch')) setFlag('met_glitch') },
     },
   ]

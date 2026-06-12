@@ -384,6 +384,24 @@ export class OverworldScene extends Scene {
     for (const a of cast) a.draw(ctx, cam)
     this.tilemap.render(ctx, cam, this.visT, 'over')
 
+    // -- objective beacon: a bobbing marker over whoever you must reach next ----------
+    const objId = this.objectiveNpcId()
+    if (objId) {
+      const tnpc = this.npcs.find(n => n.id === objId && !n.hidden)
+      if (tnpc) {
+        const sx = Math.round(tnpc.px - cam.x) + 8
+        const sy = Math.round(tnpc.py - cam.y) - 7 + Math.round(Math.sin(this.visT * 4) * 2)
+        ctx.save()
+        ctx.fillStyle = this.pal.neon2 || '#ff2e88'
+        ctx.shadowColor = this.pal.neon2 || '#ff2e88'
+        ctx.shadowBlur = 6
+        ctx.beginPath()
+        ctx.moveTo(sx - 4, sy); ctx.lineTo(sx + 4, sy); ctx.lineTo(sx, sy + 5); ctx.closePath()
+        ctx.fill()
+        ctx.restore()
+      }
+    }
+
     // -- weather ------------------------------------------------------------------------
     this.particles.render(ctx, cam.x, cam.y)
 
@@ -577,6 +595,18 @@ export class OverworldScene extends Scene {
       ctx.fillText(label, x, 6)
     }
     ctx.restore()
+  }
+
+  // Which on-map NPC to flag with a beacon right now (null = none).
+  objectiveNpcId() {
+    const f = G.flags || {}
+    const map = G.player.map || ''
+    if (map === 'underground') {
+      if (!f.met_glitch) return 'glitch'
+      if (!f.met_vex) return 'vex'
+    }
+    if (map.startsWith('forge_plant') && !f.forge_boss_done) return 'boss_forge'
+    return null
   }
 
   // A short "what now" line derived from story flags. Empty = nothing pressing.
