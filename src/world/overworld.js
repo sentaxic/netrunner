@@ -564,7 +564,40 @@ export class OverworldScene extends Scene {
       ctx.fillRect(wL + wR + 14, 7, 1, 3)
       ctx.fillRect(wL + wR + 12, 10, 1, 3)
     }
+
+    // next-step nudge so nobody gets stranded wondering where to go
+    const hint = this.objectiveHint()
+    if (hint) {
+      const label = '▸ ' + hint
+      const w = ctx.measureText(label).width
+      const x = (480 - w) / 2
+      ctx.fillStyle = 'rgba(3,5,12,0.62)'
+      ctx.fillRect(x - 5, 4, w + 10, 12)
+      ctx.fillStyle = this.pal.neon1 || '#29f3e2'
+      ctx.fillText(label, x, 6)
+    }
     ctx.restore()
+  }
+
+  // A short "what now" line derived from story flags. Empty = nothing pressing.
+  objectiveHint() {
+    const f = G.flags || {}
+    const map = G.player.map || ''
+    if (map.startsWith('forge_plant')) return f.forge_boss_done ? '' : 'Find the foreman, VOSS-7'
+    if (map.startsWith('forge')) return f.forge_boss_done ? '' : 'Enter Works No.3'
+    if (map === 'underground') {
+      if (!f.met_glitch) return 'Talk to Glitch'
+      if (!f.met_vex) return 'Talk to Vex — west side of the den'
+      if (!f.forge_boss_done) return 'Ride the rail — press M for the map'
+      return ''
+    }
+    if (map === 'rail_station') return f.forge_boss_done ? '' : 'Press M — ride to Forge Town'
+    if (map === 'aster_street') {
+      if (!f.jackin1_done) return ''
+      if (!f.underground_unlocked) return 'Find the way down — the Underground'
+      if (!f.forge_boss_done) return 'Rail station — east end of the street'
+    }
+    return ''
   }
 }
 

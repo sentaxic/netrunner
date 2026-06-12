@@ -184,19 +184,25 @@ export class JackInScene extends Scene {
     if (!this.backend || this.closing) return
 
     // ---- heat / trace -------------------------------------------------------
-    const burst = this.backend.noise ? this.backend.noise() : 0
-    this.heat = Math.min(100, this.heat + this.mission.heatRate * dt + burst * NOISE_TO_HEAT)
-    if (this.heatFill) this.heatFill.style.width = `${this.heat.toFixed(1)}%`
-    if (this.heat >= 50 && !this.warned50) {
-      this.warned50 = true
-      this.comms('GLITCH', 'Trace is past half. gridtrace has your scent — wrap it up.')
+    // Trace can be switched off in Options (kinder for newcomers); when on it's a
+    // touch gentler than before (0.75x) so there's room to read and think.
+    if (G.settings.trace === false) {
+      if (this.heatFill) { this.heatFill.style.width = '0%'; this.heatFill.style.opacity = '0.25' }
+    } else {
+      const burst = this.backend.noise ? this.backend.noise() : 0
+      this.heat = Math.min(100, this.heat + this.mission.heatRate * 0.75 * dt + burst * NOISE_TO_HEAT)
+      if (this.heatFill) this.heatFill.style.width = `${this.heat.toFixed(1)}%`
+      if (this.heat >= 50 && !this.warned50) {
+        this.warned50 = true
+        this.comms('GLITCH', 'Trace is past half. gridtrace has your scent — wrap it up.')
+      }
+      if (this.heat >= 80 && !this.warned80) {
+        this.warned80 = true
+        audio.sfx('error')
+        this.comms('GLITCH', 'EIGHTY PERCENT. They are seconds out. Finish or bail.')
+      }
+      if (this.heat >= 100) { this._traceOut(); return }
     }
-    if (this.heat >= 80 && !this.warned80) {
-      this.warned80 = true
-      audio.sfx('error')
-      this.comms('GLITCH', 'EIGHTY PERCENT. They are seconds out. Finish or bail.')
-    }
-    if (this.heat >= 100) { this._traceOut(); return }
 
     if (this.backend.exited && this.backend.exited()) { this._bailOut(); return }
 
@@ -247,7 +253,7 @@ export class JackInScene extends Scene {
     this.comms('SYS', 'OBJECTIVE COMPLETE — closing carrier.', true)
     const outro = m.outro || ['Clean work. Pull out.']
     for (const line of outro) this.comms('GLITCH', line)
-    this.closeAt = 1.4 + COMMS_DELAY * outro.length + 1.2
+    this._armDisconnect()
   }
 
   _traceOut() {
@@ -267,7 +273,7 @@ export class JackInScene extends Scene {
     this.comms('GLITCH', `TRACED — pull out, pull out NOW.${loss ? ` Burning ${loss}c to scatter your shadow. GO.` : ' GO.'}`, true)
     bus.emit('toast', loss ? `TRACED · -${loss}c` : 'TRACED')
     bus.emit('jackin:lose', this.missionId)
-    this.closeAt = 2.4
+    this._armDisconnect()
   }
 
   _bailOut() {
@@ -275,7 +281,33 @@ export class JackInScene extends Scene {
     this.term.setInputEnabled(false)
     audio.sfx('cancel')
     this.comms('GLITCH', 'Clean disconnect. No trace, no trophy. We can come back at it.', true)
-    this.closeAt = 1.3
+    this._armDisconnect()
+  }
+
+  // The encounter never closes on a timer — the player reads at their own pace and
+  // presses a key to pull out. (A long fallback only guards against a stuck state.)
+  _armDisconnect() {
+    if (this._discArmed) return
+    this._discArmed = true
+    this.term.write('\n\x1b[1;38;2;41;243;226m  ▸ press [ ENTER ] to disconnect\x1b[0m\n')
+    this._discListener = e => {
+      const c = e.code
+      if (c === 'Enter' || c === 'Space' || c === 'KeyZ' || c === 'Escape' || c === 'KeyX') {
+        e.preventDefault()
+        e.stopPropagation()
+        this._disconnectNow()
+      }
+    }
+    // capture phase on window — input is suspended, so nothing else competes for the key
+    window.addEventListener('keydown', this._discListener, true)
+    this.closeAt = 120 // safety fallback only; the keypress is the real exit
+  }
+
+  _disconnectNow() {
+    if (this._discListener) { window.removeEventListener('keydown', this._discListener, true); this._discListener = null }
+    if (this.dead) return
+    this.closeAt = null
+    scenes.switchTo('overworld', {}, 'glitch')
   }
 
   // ---- comms --------------------------------------------------------------
@@ -321,6 +353,7 @@ export class JackInScene extends Scene {
   exit() {
     this.dead = true
     this.closeAt = null
+    if (this._discListener) { try { window.removeEventListener('keydown', this._discListener, true) } catch { /* gone */ } this._discListener = null }
     try { this.unsub?.() } catch { /* gone */ }
     try { this.backend?.dispose() } catch { /* gone */ }
     this.backend = null

@@ -15,6 +15,7 @@ const DEFAULT_SETTINGS = {
   musicVol: 0.7,
   sfxVol: 0.8,
   colorblind: false,
+  trace: true,         // jack-in Heat/Trace pressure; false = relaxed (no timer) for newcomers
   // 'sim' = instant in-browser shell (default; works offline, same real commands).
   // 'real' = CheerpX full-dive x86 Linux (streams a ~600MB image from CDN; opt-in
   // via Options). 'ask' tries real first then falls back to sim.

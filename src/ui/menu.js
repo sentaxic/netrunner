@@ -515,6 +515,12 @@ export class OptionsScene extends Scene {
       },
       { label: 'COLOR-SAFE MODE', value: s.colorblind ? 'ON' : 'OFF', adj: () => { s.colorblind = !s.colorblind } },
       {
+        label: 'TRACE PRESSURE',
+        value: s.trace === false ? 'OFF' : 'ON',
+        adj: () => { s.trace = s.trace === false ? true : false },
+        hint: s.trace === false ? 'no timer — explore the deck at your own pace' : 'the Heat meter rises while you work',
+      },
+      {
         label: 'JACK-IN LINK',
         value: s.vmMode === 'real' ? 'FULL DIVE' : 'LOCAL MIRROR',
         adj: () => { s.vmMode = s.vmMode === 'real' ? 'sim' : 'real' },
