@@ -172,6 +172,23 @@ const CODEX_DB = {
     title: 'HEAT',
     body: 'Trace pressure on a run. Watchdog daemons notice noise — sloppy commands, brute force, time wasted. Max heat means a burned line and a fast exit.',
   },
+  // --- recovered on successful runs (granted by missions/quests) ---
+  cx_hidden_files: {
+    title: 'WHAT THE DOT HIDES',
+    body: 'A filename that starts with a dot just stops showing up in a plain listing. It is not gone, not locked — only quiet. ls -a shows the quiet ones. Mara knew exactly which kind of quiet to use.',
+  },
+  cx_underground: {
+    title: 'COORDINATES, RECOVERED',
+    body: 'She left the way down inside her own machine, behind a dotfile and a knock. The proof of her erasure she left somewhere The Kernel cannot scrub: a corp database, in the one table that writes down everything that touches it.',
+  },
+  cx_sql_joins: {
+    title: 'THE ROW THAT IS LEFT',
+    body: 'Delete a person from a table and the things that pointed at them do not vanish — they dangle. A payroll line with no employee. A login with no user. Stitch the tables back together with a join and the hole where she was is the loudest thing in the data.',
+  },
+  key_forge_works: {
+    title: 'ACCESS-KEY // FORGE',
+    body: 'Pulled from the foreman rig when the line came back online. Forge Town\'s gateways read it as one of their own now. The rail north no longer argues with you.',
+  },
 }
 
 const QUEST_DB = {
